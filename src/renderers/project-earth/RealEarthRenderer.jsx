@@ -1,17 +1,17 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { NATURAL_EARTH_LAND_RINGS } from './data/naturalEarthLand.js';
 
 const TWO_PI = Math.PI * 2;
-const LANDMASSES = [
-  [[-168, 72], [-135, 68], [-108, 55], [-96, 38], [-82, 25], [-100, 16], [-118, 30], [-132, 50]],
-  [[-82, 12], [-70, 7], [-54, -8], [-48, -24], [-61, -55], [-74, -36], [-78, -14]],
-  [[-18, 36], [10, 34], [32, 22], [42, 6], [30, -32], [16, -35], [2, -18], [-10, 7]],
-  [[-10, 72], [24, 70], [42, 58], [30, 44], [4, 48], [-14, 58]],
-  [[34, 60], [72, 70], [122, 56], [150, 46], [142, 18], [106, 6], [82, 22], [54, 18], [42, 36]],
-  [[112, -12], [154, -18], [150, -38], [124, -44], [112, -28]],
-  [[-180, -66], [-90, -72], [0, -68], [90, -72], [180, -66], [180, -90], [-180, -90]]
-];
+const HORIZON_EPSILON = -0.08;
+
+export function getEarthMesh() {
+  return {
+    source: 'Natural Earth 1:110m public-domain land polygons',
+    rings: NATURAL_EARTH_LAND_RINGS
+  };
+}
 
 function hasWebGL() {
   if (typeof document === 'undefined') return false;
@@ -24,32 +24,48 @@ function hasWebGL() {
   }
 }
 
-function project([lon, lat], radius, center, turnY, turnX) {
-  const lambda = ((lon + turnY) * Math.PI) / 180;
-  const phi = ((lat + turnX) * Math.PI) / 180;
-  const x = radius * Math.cos(phi) * Math.sin(lambda);
+function projectCoordinate([lon, lat], radius, center, rotation) {
+  const lambda = ((lon + rotation.y) * Math.PI) / 180;
+  const phi = ((lat + rotation.x) * Math.PI) / 180;
+  const cosPhi = Math.cos(phi);
+  const x = radius * cosPhi * Math.sin(lambda);
   const y = -radius * Math.sin(phi);
-  const z = radius * Math.cos(phi) * Math.cos(lambda);
+  const z = radius * cosPhi * Math.cos(lambda);
 
-  if (z < -radius * 0.18) return null;
+  if (z < radius * HORIZON_EPSILON) return null;
 
   return [center + x, center + y];
 }
 
-function drawLandmass(ctx, points, radius, center, rotation) {
-  const projected = points.map((point) => project(point, radius, center, rotation.y, rotation.x));
-  const visible = projected.filter(Boolean);
-
-  if (visible.length < 2) return;
+function drawRing(ctx, ring, radius, center, rotation, { fill = true, stroke = true } = {}) {
+  let active = false;
+  let drawnPoints = 0;
 
   ctx.beginPath();
-  visible.forEach(([x, y], index) => {
-    if (index === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+
+  ring.forEach((coordinate) => {
+    const projected = projectCoordinate(coordinate, radius, center, rotation);
+
+    if (!projected) {
+      active = false;
+      return;
+    }
+
+    const [x, y] = projected;
+    if (!active) {
+      ctx.moveTo(x, y);
+      active = true;
+    } else {
+      ctx.lineTo(x, y);
+    }
+    drawnPoints += 1;
   });
+
+  if (drawnPoints < 3) return;
+
   ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
 }
 
 function drawEarth(canvas, focus, rotation) {
@@ -65,21 +81,31 @@ function drawEarth(canvas, focus, rotation) {
 
   const center = size / 2;
   const radius = size * 0.49;
+  const mesh = getEarthMesh();
+
   ctx.save();
   ctx.beginPath();
   ctx.arc(center, center, radius, 0, TWO_PI);
   ctx.clip();
 
-  const ocean = ctx.createRadialGradient(size * 0.34, size * 0.24, size * 0.04, center, center, radius);
-  ocean.addColorStop(0, '#4fb3cf');
-  ocean.addColorStop(0.36, '#075f83');
-  ocean.addColorStop(0.72, '#062d58');
+  const ocean = ctx.createRadialGradient(size * 0.32, size * 0.2, size * 0.03, center, center, radius);
+  ocean.addColorStop(0, '#6bc4d8');
+  ocean.addColorStop(0.2, '#1d86a8');
+  ocean.addColorStop(0.48, '#075174');
+  ocean.addColorStop(0.76, '#062d58');
   ocean.addColorStop(1, '#010817');
   ctx.fillStyle = ocean;
   ctx.fillRect(0, 0, size, size);
 
-  ctx.globalAlpha = 0.24;
-  ctx.strokeStyle = 'rgba(218,241,255,.28)';
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = 0.08;
+  ctx.strokeStyle = '#bdeeff';
+  ctx.lineWidth = Math.max(2, size * 0.006);
+  mesh.rings.forEach((ring) => drawRing(ctx, ring, radius * 1.002, center, rotation, { fill: false, stroke: true }));
+  ctx.globalCompositeOperation = 'source-over';
+
+  ctx.globalAlpha = 0.18;
+  ctx.strokeStyle = 'rgba(218,241,255,.24)';
   ctx.lineWidth = Math.max(0.8, size * 0.0015);
   for (let i = -60; i <= 60; i += 30) {
     ctx.beginPath();
@@ -90,15 +116,20 @@ function drawEarth(canvas, focus, rotation) {
   }
 
   ctx.globalAlpha = 1;
-  ctx.fillStyle = '#5d7f48';
-  ctx.strokeStyle = 'rgba(235, 220, 170, .26)';
-  ctx.lineWidth = Math.max(1, size * 0.002);
-  LANDMASSES.forEach((landmass) => drawLandmass(ctx, landmass, radius, center, rotation));
+  const land = ctx.createLinearGradient(size * 0.24, size * 0.1, size * 0.76, size * 0.9);
+  land.addColorStop(0, '#7f8d59');
+  land.addColorStop(0.42, '#617b4a');
+  land.addColorStop(0.72, '#9b8055');
+  land.addColorStop(1, '#4f6d45');
+  ctx.fillStyle = land;
+  ctx.strokeStyle = 'rgba(239, 226, 185, .38)';
+  ctx.lineWidth = Math.max(0.75, size * 0.0016);
+  mesh.rings.forEach((ring) => drawRing(ctx, ring, radius, center, rotation));
 
-  ctx.globalCompositeOperation = 'screen';
-  ctx.globalAlpha = 0.18;
-  ctx.fillStyle = '#f7fbff';
-  LANDMASSES.forEach((landmass) => drawLandmass(ctx, landmass.map(([lon, lat]) => [lon + 2, lat + 1]), radius, center, rotation));
+  ctx.globalCompositeOperation = 'soft-light';
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = 'rgba(255, 230, 176, .55)';
+  mesh.rings.forEach((ring) => drawRing(ctx, ring.map(([lon, lat]) => [lon - 0.8, lat + 0.4]), radius, center, rotation, { stroke: false }));
   ctx.globalCompositeOperation = 'source-over';
 
   const shade = ctx.createRadialGradient(size * 0.24, size * 0.18, size * 0.08, size * 0.72, size * 0.68, radius * 1.04);
