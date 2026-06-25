@@ -92,22 +92,43 @@ function getVisibleRingSegments(ring, radius, center, rotation) {
   return segments.filter((visibleSegment) => visibleSegment.length >= 2);
 }
 
-function drawRing(ctx, ring, radius, center, rotation, { fill = true, stroke = true } = {}) {
-  const segments = getVisibleRingSegments(ring, radius, center, rotation);
-
-  segments.forEach((segment) => {
-    if ((fill && segment.length < 3) || (!fill && segment.length < 2)) return;
-
-    ctx.beginPath();
-    segment.forEach(({ x, y }, index) => {
-      if (index === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-
-    if (fill) ctx.closePath();
-    if (fill) ctx.fill();
-    if (stroke) ctx.stroke();
+function drawProjectedPath(ctx, points, { close = false } = {}) {
+  ctx.beginPath();
+  points.forEach(({ x, y }, index) => {
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
   });
+  if (close) ctx.closePath();
+}
+
+function drawRing(ctx, ring, radius, center, rotation, { fill = true, stroke = true } = {}) {
+  const projectedPoints = ring.map((coordinate) => projectPoint(coordinate, radius, center, rotation));
+  const horizonZ = radius * HORIZON_EPSILON;
+  const isFullyVisible = projectedPoints.every((point) => point.z >= horizonZ);
+
+  if (fill && isFullyVisible && projectedPoints.length >= 3) {
+    drawProjectedPath(ctx, projectedPoints, { close: true });
+    ctx.fill();
+    if (stroke) ctx.stroke();
+    return;
+  }
+
+  if (fill && !stroke) return;
+
+  const segments = getVisibleRingSegments(ring, radius, center, rotation);
+  segments.forEach((segment) => {
+    if (segment.length < 2) return;
+    drawProjectedPath(ctx, segment);
+    ctx.stroke();
+  });
+}
+
+function createLatitudeRing(latitude) {
+  return Array.from({ length: 145 }, (_, index) => [-180 + index * 2.5, latitude]);
+}
+
+function createLongitudeRing(longitude) {
+  return Array.from({ length: 73 }, (_, index) => [longitude, -90 + index * 2.5]);
 }
 
 function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0 }) {
@@ -149,13 +170,12 @@ function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloud
   ctx.globalAlpha = 0.18;
   ctx.strokeStyle = 'rgba(218,241,255,.24)';
   ctx.lineWidth = Math.max(0.8, size * 0.0015);
-  for (let i = -60; i <= 60; i += 30) {
-    ctx.beginPath();
-    const y = center - radius * Math.sin((i * Math.PI) / 180);
-    const h = Math.max(1, radius * Math.cos((i * Math.PI) / 180));
-    ctx.ellipse(center, y, h, h * 0.12, 0, 0, TWO_PI);
-    ctx.stroke();
-  }
+  [-60, -30, 0, 30, 60].forEach((latitude) => {
+    drawRing(ctx, createLatitudeRing(latitude), radius, center, rotation, { fill: false, stroke: true });
+  });
+  [-120, -60, 0, 60, 120, 180].forEach((longitude) => {
+    drawRing(ctx, createLongitudeRing(longitude), radius, center, rotation, { fill: false, stroke: true });
+  });
 
   ctx.globalAlpha = 1;
   const land = ctx.createLinearGradient(size * 0.24, size * 0.1, size * 0.76, size * 0.9);
