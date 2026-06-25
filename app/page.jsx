@@ -31,20 +31,38 @@ function resolveEarthCamera(profile) {
   };
 }
 
+function shortestRotationDelta(fromDegrees, toDegrees) {
+  return ((((toDegrees - fromDegrees) + 180) % 360) + 360) % 360 - 180;
+}
+
 function interpolateCamera(from, to, progress) {
   const eased = easeOutCubic(progress);
   const lerp = (start, end) => start + (end - start) * eased;
+  const yawDelta = shortestRotationDelta(from.rotation.y, to.rotation.y);
 
   return {
-    coordinates: {
-      latitude: lerp(from.coordinates.latitude, to.coordinates.latitude),
-      longitude: lerp(from.coordinates.longitude, to.coordinates.longitude)
-    },
+    coordinates: to.coordinates,
     rotation: {
       x: lerp(from.rotation.x, to.rotation.x),
-      y: lerp(from.rotation.y, to.rotation.y)
+      y: from.rotation.y + yawDelta * eased
     }
   };
+}
+
+function useReducedMotion() {
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReducedMotion(query.matches);
+    update();
+    query.addEventListener?.('change', update);
+    return () => query.removeEventListener?.('change', update);
+  }, []);
+
+  return reducedMotion;
 }
 
 export default function Home() {
@@ -56,6 +74,8 @@ export default function Home() {
   const animationFrameRef = useRef(null);
   const cameraRef = useRef(targetEarthCamera);
   const [earthCamera, setEarthCamera] = useState(targetEarthCamera);
+  const [isCameraTransitioning, setIsCameraTransitioning] = useState(false);
+  const reducedMotion = useReducedMotion();
   const activeTranslation = useMemo(() => (
     mode === 'fixed' ? getTranslation('web') : getTranslation(profile.translationId)
   ), [mode, profile.translationId]);
@@ -91,6 +111,15 @@ export default function Home() {
     const startedAt = performance.now();
     const startCamera = cameraRef.current;
 
+    if (reducedMotion) {
+      cameraRef.current = targetEarthCamera;
+      setEarthCamera(targetEarthCamera);
+      setIsCameraTransitioning(false);
+      return undefined;
+    }
+
+    setIsCameraTransitioning(true);
+
     const animateFocus = (now) => {
       const progress = Math.min(1, (now - startedAt) / ARRIVAL_TIMING.ready);
       const nextCamera = interpolateCamera(startCamera, targetEarthCamera, progress);
@@ -99,6 +128,10 @@ export default function Home() {
 
       if (progress < 1) {
         animationFrameRef.current = window.requestAnimationFrame(animateFocus);
+      } else {
+        cameraRef.current = targetEarthCamera;
+        setEarthCamera(targetEarthCamera);
+        setIsCameraTransitioning(false);
       }
     };
 
@@ -107,7 +140,7 @@ export default function Home() {
     return () => {
       if (animationFrameRef.current) window.cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [targetEarthCamera]);
+  }, [targetEarthCamera, reducedMotion]);
 
   return (
     <main className="pageShell">
@@ -128,6 +161,7 @@ export default function Home() {
           coordinates={earthCamera.coordinates}
           rotation={earthCamera.rotation}
           signalLabel={`${profile.country} signal`}
+          isTransitioning={isCameraTransitioning}
         />
 
         <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>

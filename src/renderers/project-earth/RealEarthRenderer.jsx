@@ -230,7 +230,7 @@ function useReducedMotion() {
   return reducedMotion;
 }
 
-export function RealEarthRenderer({ coordinates, rotation, signalLabel = 'Earth signal', onUnavailable }) {
+export function RealEarthRenderer({ coordinates, rotation, signalLabel = 'Earth signal', onUnavailable, isTransitioning = false }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
@@ -336,6 +336,19 @@ export function RealEarthRenderer({ coordinates, rotation, signalLabel = 'Earth 
   }, [baseRotation.x]);
 
   useEffect(() => {
+    const interaction = interactionRef.current;
+    if (isTransitioning) {
+      interaction.rotationOffset = { x: 0, y: 0, z: 0 };
+      interaction.autoTurn = 0;
+      interaction.yawVelocity = 0;
+      interaction.pitchVelocity = 0;
+      return;
+    }
+
+    interaction.releasedAt = performance.now();
+  }, [isTransitioning]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
 
@@ -363,7 +376,7 @@ export function RealEarthRenderer({ coordinates, rotation, signalLabel = 'Earth 
       const resumeProgress = interaction.releasedAt === 0
         ? 1
         : Math.min(1, Math.max(0, (timeSinceRelease - AUTO_RESUME_DELAY_MS) / AUTO_RESUME_RAMP_MS));
-      const autoMultiplier = interaction.isDragging ? 0 : resumeProgress;
+      const autoMultiplier = interaction.isDragging || isTransitioning ? 0 : resumeProgress;
 
       const frameSeconds = interaction.lastFrameAt === 0 ? 0 : (now - interaction.lastFrameAt) / 1000;
       interaction.lastFrameAt = now;
@@ -411,7 +424,7 @@ export function RealEarthRenderer({ coordinates, rotation, signalLabel = 'Earth 
       resizeObserver.disconnect();
       if (animationRef.current) window.cancelAnimationFrame(animationRef.current);
     };
-  }, [coordinates, baseRotation, reducedMotion]);
+  }, [coordinates, baseRotation, reducedMotion, isTransitioning]);
 
   const beaconStyle = { '--beacon-x': `${projectedBeacon.x}%`, '--beacon-y': `${projectedBeacon.y}%`, opacity: projectedBeacon.visible ? 1 : 0.18 };
 
