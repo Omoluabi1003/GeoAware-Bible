@@ -197,6 +197,7 @@ export default function Home() {
           <div className="readerMeta">
             <strong>{activeTranslation.name}</strong>
             <span>{activeTranslation.license}</span>
+            <span>{activeTranslation.licenseSource}</span>
             <span className="metadataBadge">Open-License Scripture Engine</span>
           </div>
           <div className="languageChips" aria-label="Available local languages">
