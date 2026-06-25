@@ -182,7 +182,57 @@ function createLongitudeRing(longitude) {
   return Array.from({ length: 73 }, (_, index) => [longitude, -90 + index * 2.5]);
 }
 
-function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0 }) {
+function createCountryHighlightRing(highlight) {
+  if (!highlight) return [];
+
+  const {
+    latitude,
+    longitude,
+    radiusLatitude = 4,
+    radiusLongitude = 4,
+    tilt = 0
+  } = highlight;
+  const tiltRadians = degreesToRadians(tilt);
+  const cosTilt = Math.cos(tiltRadians);
+  const sinTilt = Math.sin(tiltRadians);
+
+  return Array.from({ length: 73 }, (_, index) => {
+    const angle = (index / 72) * TWO_PI;
+    const localLongitude = Math.cos(angle) * radiusLongitude;
+    const localLatitude = Math.sin(angle) * radiusLatitude;
+    return [
+      longitude + localLongitude * cosTilt - localLatitude * sinTilt,
+      latitude + localLongitude * sinTilt + localLatitude * cosTilt
+    ];
+  });
+}
+
+function drawCountryHighlight(ctx, activeCountryHighlight, radius, center, rotation, size) {
+  const ring = createCountryHighlightRing(activeCountryHighlight);
+  if (ring.length < 3) return;
+
+  const centerPoint = projectPoint([activeCountryHighlight.longitude, activeCountryHighlight.latitude], radius, center, rotation);
+  const centerFade = clamp((centerPoint.z + radius * 0.06) / (radius * 0.34), 0, 1);
+  if (centerFade <= 0) return;
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = 0.16 * centerFade;
+  ctx.fillStyle = 'rgba(247, 215, 122, .62)';
+  ctx.strokeStyle = 'rgba(255, 239, 184, .72)';
+  ctx.lineWidth = Math.max(1.4, size * 0.0034);
+  ctx.shadowColor = 'rgba(247, 215, 122, .28)';
+  ctx.shadowBlur = Math.max(8, size * 0.018);
+  drawRing(ctx, ring, radius * 1.004, center, rotation, { fill: true, stroke: true });
+
+  ctx.globalAlpha = 0.22 * centerFade;
+  ctx.lineWidth = Math.max(3, size * 0.008);
+  ctx.filter = `blur(${Math.max(2, size * 0.005)}px)`;
+  drawRing(ctx, ring, radius * 1.006, center, rotation, { fill: false, stroke: true });
+  ctx.restore();
+}
+
+function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0 }, activeCountryHighlight = null) {
   const rect = canvas.getBoundingClientRect();
   const size = Math.max(1, Math.round(rect.width));
   const scale = window.devicePixelRatio || 1;
@@ -246,6 +296,8 @@ function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloud
   mesh.rings.forEach((ring) => drawRing(ctx, ring.map(([lon, lat]) => [lon - 0.8, lat + 0.4]), radius, center, rotation, { stroke: false }));
   ctx.globalCompositeOperation = 'source-over';
 
+  drawCountryHighlight(ctx, activeCountryHighlight, radius, center, rotation, size);
+
   ctx.save();
   ctx.globalCompositeOperation = 'screen';
   ctx.globalAlpha = 0.18;
@@ -307,6 +359,7 @@ export function RealEarthRenderer({
   rotation,
   signalLabel = 'Earth signal',
   activeLocationLabel = '',
+  activeCountryHighlight = null,
   onUnavailable,
   isTransitioning = false
 }) {
@@ -447,7 +500,7 @@ export function RealEarthRenderer({
     };
     const renderStill = () => {
       const nextRotation = getInteractionRotation();
-      drawEarth(canvas, coordinates, nextRotation, stillMotion);
+      drawEarth(canvas, coordinates, nextRotation, stillMotion, activeCountryHighlight);
       updateBeacon(nextRotation);
     };
     const renderFrame = (now) => {
@@ -498,7 +551,7 @@ export function RealEarthRenderer({
       const lightPhase = reducedMotion ? 0 : ((now - startedAt) / LIGHT_DRIFT_PERIOD_MS) * TWO_PI;
 
       const nextRotation = getInteractionRotation();
-      drawEarth(canvas, coordinates, nextRotation, { earthTurn, cloudTurn, lightPhase });
+      drawEarth(canvas, coordinates, nextRotation, { earthTurn, cloudTurn, lightPhase }, activeCountryHighlight);
       updateBeacon(nextRotation);
       animationRef.current = window.requestAnimationFrame(renderFrame);
     };
@@ -514,7 +567,7 @@ export function RealEarthRenderer({
       resizeObserver.disconnect();
       if (animationRef.current) window.cancelAnimationFrame(animationRef.current);
     };
-  }, [coordinates, baseRotation, reducedMotion, isTransitioning]);
+  }, [coordinates, activeCountryHighlight, baseRotation, reducedMotion, isTransitioning]);
 
   const labelXDirection = projectedBeacon.x < 50 ? 1 : -1;
   const labelYDirection = projectedBeacon.y < 50 ? 1 : -1;

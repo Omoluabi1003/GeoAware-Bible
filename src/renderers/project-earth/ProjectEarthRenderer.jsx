@@ -16,6 +16,7 @@ export default function ProjectEarthRenderer({
   rotation = { x: 0, y: 0 },
   signalLabel = 'Earth signal',
   activeLocationLabel = '',
+  activeCountryHighlight = null,
   isTransitioning = false,
   className = ''
 }) {
@@ -32,7 +33,7 @@ export default function ProjectEarthRenderer({
         <div className="orbit orbitOne" aria-hidden="true" />
         <div className="orbit orbitTwo" aria-hidden="true" />
         <div className="earthWrapper">
-          <EarthRenderer coordinates={coordinates} rotation={rotation} signalLabel={signalLabel} activeLocationLabel={activeLocationLabel} isTransitioning={isTransitioning} />
+          <EarthRenderer coordinates={coordinates} rotation={rotation} signalLabel={signalLabel} activeLocationLabel={activeLocationLabel} activeCountryHighlight={activeCountryHighlight} isTransitioning={isTransitioning} />
         </div>
       </div>
     </div>
