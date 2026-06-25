@@ -80,9 +80,6 @@ export default function Home() {
               <div className="latitude latThree" />
               <div className="longitude lonOne" />
               <div className="longitude lonTwo" />
-              <div className="land landOne" />
-              <div className="land landTwo" />
-              <div className="land landThree" />
               <div className="beacon" aria-label={`${profile.country} signal`}>
                 <span />
               </div>
