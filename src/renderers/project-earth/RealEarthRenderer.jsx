@@ -12,10 +12,10 @@ const EARTH_ROTATION_DEGREES_PER_SECOND = 0.25;
 const CLOUD_DRIFT_DEGREES_PER_SECOND = 0.012;
 const LIGHT_DRIFT_PERIOD_MS = 1200000;
 const DRAG_DEGREES_PER_PIXEL = 0.18;
-const INERTIA_DECAY_PER_FRAME = 0.94;
-const MIN_INERTIA_DEGREES_PER_FRAME = 0.006;
-const AUTO_RESUME_DELAY_MS = 2200;
-const AUTO_RESUME_RAMP_MS = 7000;
+const INERTIA_DAMPING_PER_SECOND = 3.2;
+const MIN_INERTIA_DEGREES_PER_SECOND = 0.36;
+const AUTO_RESUME_DELAY_MS = 6000;
+const AUTO_RESUME_RAMP_MS = 2400;
 const MIN_PITCH_DEGREES = -62;
 const MAX_PITCH_DEGREES = 62;
 
@@ -23,6 +23,59 @@ export function getEarthMesh() {
   return {
     source: 'Natural Earth 1:110m public-domain land polygons',
     rings: NATURAL_EARTH_LAND_RINGS
+  };
+}
+
+
+function degreesToRadians(degrees) {
+  return (degrees * Math.PI) / 180;
+}
+
+function radiansToDegrees(radians) {
+  return (radians * 180) / Math.PI;
+}
+
+function normalizeAngle(degrees) {
+  return ((((degrees + 180) % 360) + 360) % 360) - 180;
+}
+
+function createQuaternionFromEuler(pitchDegrees, yawDegrees) {
+  const halfPitch = degreesToRadians(pitchDegrees) / 2;
+  const halfYaw = degreesToRadians(yawDegrees) / 2;
+  const sinPitch = Math.sin(halfPitch);
+  const cosPitch = Math.cos(halfPitch);
+  const sinYaw = Math.sin(halfYaw);
+  const cosYaw = Math.cos(halfYaw);
+
+  return {
+    w: cosYaw * cosPitch,
+    x: cosYaw * sinPitch,
+    y: sinYaw * cosPitch,
+    z: -sinYaw * sinPitch
+  };
+}
+
+function rotationFromQuaternion(quaternion) {
+  const { w, x, y, z } = quaternion;
+  const pitchSine = clamp(2 * (w * x - y * z), -1, 1);
+  const pitch = radiansToDegrees(Math.asin(pitchSine));
+  const yaw = radiansToDegrees(Math.atan2(2 * (w * y + x * z), 1 - 2 * (x * x + y * y)));
+
+  return {
+    x: clamp(pitch, MIN_PITCH_DEGREES, MAX_PITCH_DEGREES),
+    y: normalizeAngle(yaw)
+  };
+}
+
+function composePhysicalRotation(baseRotation, interaction) {
+  const pitch = clamp(baseRotation.x + interaction.rotationOffset.x, MIN_PITCH_DEGREES, MAX_PITCH_DEGREES);
+  const yaw = baseRotation.y + interaction.rotationOffset.y + interaction.autoTurn;
+  interaction.orientation = createQuaternionFromEuler(pitch, yaw);
+  const rotation = rotationFromQuaternion(interaction.orientation);
+
+  return {
+    x: rotation.x,
+    y: yaw
   };
 }
 
@@ -268,6 +321,7 @@ export function RealEarthRenderer({
     lastY: 0,
     lastTime: 0,
     rotationOffset: { x: 0, y: 0, z: 0 },
+    orientation: createQuaternionFromEuler(0, 0),
     yawVelocity: 0,
     pitchVelocity: 0,
     isDragging: false,
@@ -319,9 +373,9 @@ export function RealEarthRenderer({
       const now = performance.now();
       const dx = event.clientX - interaction.lastX;
       const dy = event.clientY - interaction.lastY;
-      const dt = Math.max(16, now - interaction.lastTime);
+      const dt = Math.max(8, now - interaction.lastTime);
       const yawTurn = dx * DRAG_DEGREES_PER_PIXEL;
-      const pitchTurn = -dy * DRAG_DEGREES_PER_PIXEL;
+      const pitchTurn = dy * DRAG_DEGREES_PER_PIXEL;
       const nextPitchOffset = clamp(
         interaction.rotationOffset.x + pitchTurn,
         MIN_PITCH_DEGREES - baseRotation.x,
@@ -330,8 +384,8 @@ export function RealEarthRenderer({
       const appliedPitchTurn = nextPitchOffset - interaction.rotationOffset.x;
       interaction.rotationOffset.y += yawTurn;
       interaction.rotationOffset.x = nextPitchOffset;
-      interaction.yawVelocity = (yawTurn / dt) * 16.67;
-      interaction.pitchVelocity = (appliedPitchTurn / dt) * 16.67;
+      interaction.yawVelocity = (yawTurn / dt) * 1000;
+      interaction.pitchVelocity = (appliedPitchTurn / dt) * 1000;
       interaction.lastX = event.clientX;
       interaction.lastY = event.clientY;
       interaction.lastTime = now;
@@ -365,6 +419,7 @@ export function RealEarthRenderer({
     const interaction = interactionRef.current;
     if (isTransitioning) {
       interaction.rotationOffset = { x: 0, y: 0, z: 0 };
+      interaction.orientation = createQuaternionFromEuler(baseRotation.x, baseRotation.y);
       interaction.autoTurn = 0;
       interaction.yawVelocity = 0;
       interaction.pitchVelocity = 0;
@@ -372,7 +427,7 @@ export function RealEarthRenderer({
     }
 
     interaction.releasedAt = performance.now();
-  }, [isTransitioning]);
+  }, [isTransitioning, baseRotation.x, baseRotation.y]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -381,10 +436,7 @@ export function RealEarthRenderer({
     const startedAt = performance.now();
     const stillMotion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0 };
 
-    const getInteractionRotation = (earthTurn = 0) => ({
-      x: clamp(baseRotation.x + interactionRef.current.rotationOffset.x, MIN_PITCH_DEGREES, MAX_PITCH_DEGREES),
-      y: baseRotation.y + earthTurn + interactionRef.current.rotationOffset.y
-    });
+    const getInteractionRotation = () => composePhysicalRotation(baseRotation, interactionRef.current);
     const updateBeacon = (nextRotation) => {
       const rect = canvas.getBoundingClientRect();
       const size = Math.max(1, Math.round(rect.width));
@@ -410,19 +462,29 @@ export function RealEarthRenderer({
       interaction.lastFrameAt = now;
 
       if (!interaction.isDragging && !reducedMotion) {
-        if (Math.abs(interaction.yawVelocity) > MIN_INERTIA_DEGREES_PER_FRAME) {
-          interaction.rotationOffset.y += interaction.yawVelocity;
-          interaction.yawVelocity *= INERTIA_DECAY_PER_FRAME;
+        const damping = Math.exp(-INERTIA_DAMPING_PER_SECOND * frameSeconds);
+
+        if (Math.abs(interaction.yawVelocity) > MIN_INERTIA_DEGREES_PER_SECOND) {
+          interaction.rotationOffset.y += interaction.yawVelocity * frameSeconds;
+          interaction.yawVelocity *= damping;
+        } else {
+          interaction.yawVelocity = 0;
         }
 
-        if (Math.abs(interaction.pitchVelocity) > MIN_INERTIA_DEGREES_PER_FRAME) {
+        if (Math.abs(interaction.pitchVelocity) > MIN_INERTIA_DEGREES_PER_SECOND) {
           const nextPitchOffset = clamp(
-            interaction.rotationOffset.x + interaction.pitchVelocity,
+            interaction.rotationOffset.x + interaction.pitchVelocity * frameSeconds,
             MIN_PITCH_DEGREES - baseRotation.x,
             MAX_PITCH_DEGREES - baseRotation.x
           );
-          interaction.pitchVelocity = (nextPitchOffset - interaction.rotationOffset.x) * INERTIA_DECAY_PER_FRAME;
+          if (nextPitchOffset === MIN_PITCH_DEGREES - baseRotation.x || nextPitchOffset === MAX_PITCH_DEGREES - baseRotation.x) {
+            interaction.pitchVelocity = 0;
+          } else {
+            interaction.pitchVelocity *= damping;
+          }
           interaction.rotationOffset.x = nextPitchOffset;
+        } else {
+          interaction.pitchVelocity = 0;
         }
       }
 
@@ -435,7 +497,7 @@ export function RealEarthRenderer({
       const cloudTurn = reducedMotion ? 0 : elapsedSeconds * CLOUD_DRIFT_DEGREES_PER_SECOND;
       const lightPhase = reducedMotion ? 0 : ((now - startedAt) / LIGHT_DRIFT_PERIOD_MS) * TWO_PI;
 
-      const nextRotation = getInteractionRotation(earthTurn);
+      const nextRotation = getInteractionRotation();
       drawEarth(canvas, coordinates, nextRotation, { earthTurn, cloudTurn, lightPhase });
       updateBeacon(nextRotation);
       animationRef.current = window.requestAnimationFrame(renderFrame);
