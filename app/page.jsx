@@ -20,12 +20,84 @@ const ARRIVAL_TIMING = {
   ready: 760
 };
 
+const GEOLOCATION_OPTIONS = {
+  enableHighAccuracy: true,
+  timeout: 12000,
+  maximumAge: 0
+};
+
+function getPreciseBrowserLocation() {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    return Promise.reject(new Error('Browser geolocation is unavailable.'));
+  }
+
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy
+      }),
+      (error) => reject(error),
+      GEOLOCATION_OPTIONS
+    );
+  });
+}
+
+function formatDetectedLocality(address = {}) {
+  const city = address.city || address.town || address.village || address.hamlet || address.municipality || address.county;
+  const region = address.state || address.region || address.province || address.state_district;
+  const country = address.country;
+
+  return {
+    city,
+    region,
+    country,
+    countryCode: address.country_code?.toUpperCase?.()
+  };
+}
+
+async function reverseGeocodeCoordinates(coordinates, signal) {
+  const params = new URLSearchParams({
+    format: 'jsonv2',
+    lat: String(coordinates.latitude),
+    lon: String(coordinates.longitude),
+    addressdetails: '1',
+    zoom: '14'
+  });
+  const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params.toString()}`, {
+    signal,
+    headers: { Accept: 'application/json' }
+  });
+
+  if (!response.ok) {
+    throw new Error('Reverse geocoding failed.');
+  }
+
+  const result = await response.json();
+  const locality = formatDetectedLocality(result.address);
+  if (!locality.city && !locality.region && !locality.country) {
+    throw new Error('Reverse geocoding returned no locality.');
+  }
+
+  return locality;
+}
+
+function buildLocationLabel(profile, detectedLocality) {
+  if (detectedLocality) {
+    const preciseLabel = [detectedLocality.city, detectedLocality.region].filter(Boolean).join(', ');
+    return preciseLabel || detectedLocality.country || profile.country || 'Location available';
+  }
+
+  return [profile.city, profile.state].filter(Boolean).join(', ') || profile.country || 'Location available';
+}
+
 function easeOutCubic(progress) {
   return 1 - (1 - progress) ** 3;
 }
 
-function resolveEarthCamera(profile) {
-  const coordinates = profile.coordinates || languageProfiles.US.coordinates;
+function resolveEarthCamera(profile, detectedCoordinates = null) {
+  const coordinates = detectedCoordinates || profile.coordinates || languageProfiles.US.coordinates;
   return {
     coordinates,
     rotation: rotationForGeoCoordinate(coordinates)
@@ -70,9 +142,15 @@ export default function Home() {
   const [countryCode, setCountryCode] = useState('US');
   const [mode, setMode] = useState('geo');
   const [arrivalStep, setArrivalStep] = useState('ready');
+  const [detectedCoordinates, setDetectedCoordinates] = useState(null);
+  const [detectedLocality, setDetectedLocality] = useState(null);
+  const [locationError, setLocationError] = useState('');
+  const [locationRequestKey, setLocationRequestKey] = useState(0);
   const profile = languageProfiles[countryCode] || languageProfiles.US;
   const GeoContext = useMemo(() => getGeoContext(countryCode), [countryCode]);
-  const targetEarthCamera = useMemo(() => resolveEarthCamera(profile), [profile]);
+  const activeDetectedCoordinates = mode === 'geo' ? detectedCoordinates : null;
+  const activeDetectedLocality = mode === 'geo' ? detectedLocality : null;
+  const targetEarthCamera = useMemo(() => resolveEarthCamera(profile, activeDetectedCoordinates), [profile, activeDetectedCoordinates]);
   const animationFrameRef = useRef(null);
   const cameraRef = useRef(targetEarthCamera);
   const [earthCamera, setEarthCamera] = useState(targetEarthCamera);
@@ -87,13 +165,13 @@ export default function Home() {
       .slice(0, 2)
   ), [profile.alternates, profile.primaryLanguage]);
   const countries = Object.entries(languageProfiles);
-  const locationLabel = [profile.city, profile.state].filter(Boolean).join(', ') || profile.country || 'Location available';
+  const locationLabel = buildLocationLabel(profile, activeDetectedLocality);
   const arrivalMessage = arrivalStep === 'finding'
     ? `Finding ${profile.country}...`
     : arrivalStep === 'recognized'
       ? `${profile.flag} ${locationLabel} recognized`
       : arrivalStep === 'preparing'
-        ? `Preparing Scripture for ${profile.city}, ${profile.country}`
+        ? `Preparing Scripture for ${locationLabel}`
         : `Scripture ready in ${mode === 'fixed' ? 'English' : profile.primaryLanguage}`;
 
   useEffect(() => {
@@ -105,7 +183,42 @@ export default function Home() {
     ];
 
     return () => timers.forEach(clearTimeout);
-  }, [countryCode]);
+  }, [countryCode, locationLabel]);
+
+
+  useEffect(() => {
+    if (mode !== 'geo') return undefined;
+
+    const controller = new AbortController();
+    let isActive = true;
+
+    setLocationError('');
+
+    getPreciseBrowserLocation()
+      .then(async (coordinates) => {
+        if (!isActive) return;
+        setDetectedCoordinates(coordinates);
+
+        const locality = await reverseGeocodeCoordinates(coordinates, controller.signal);
+        if (!isActive) return;
+
+        setDetectedLocality(locality);
+        if (locality.countryCode && languageProfiles[locality.countryCode]) {
+          setCountryCode(locality.countryCode);
+        }
+      })
+      .catch((error) => {
+        if (!isActive || error?.name === 'AbortError') return;
+        setDetectedCoordinates(null);
+        setDetectedLocality(null);
+        setLocationError(error?.code === 1 ? 'Location permission denied; using country profile fallback.' : 'Precise location unavailable; using country profile fallback.');
+      });
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [mode, locationRequestKey]);
 
   useEffect(() => {
     if (animationFrameRef.current) window.cancelAnimationFrame(animationFrameRef.current);
@@ -154,7 +267,7 @@ export default function Home() {
         <div className="heroCopy">
           <h1>God's Word. Wherever you are.</h1>
           <div className="modeSwitch" aria-label="Geo mode selector">
-            <button className={mode === 'geo' ? 'active' : ''} onClick={() => setMode('geo')}><MapPin size={16} /> Follow My Location</button>
+            <button className={mode === 'geo' ? 'active' : ''} onClick={() => { setMode('geo'); setLocationRequestKey((key) => key + 1); }}><MapPin size={16} /> Follow My Location</button>
             <button className={mode === 'fixed' ? 'active' : ''} onClick={() => setMode('fixed')}><BookOpen size={16} /> Stay In English</button>
           </div>
         </div>
@@ -162,7 +275,7 @@ export default function Home() {
         <ProjectEarthRenderer
           coordinates={earthCamera.coordinates}
           rotation={earthCamera.rotation}
-          signalLabel={`${GeoContext.country} signal`}
+          signalLabel={`${activeDetectedLocality?.country || GeoContext.country} signal`}
           activeLocationLabel={locationLabel}
           activeCountryHighlight={profile.countryHighlight}
           isTransitioning={isCameraTransitioning}
@@ -170,13 +283,13 @@ export default function Home() {
 
         <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
           <h2><span aria-hidden="true">{profile.flag}</span> {locationLabel}</h2>
-          <small aria-live="polite" aria-atomic="true">{arrivalStep === 'ready' ? 'Scripture ready' : arrivalMessage}</small>
+          <small aria-live="polite" aria-atomic="true">{locationError || (arrivalStep === 'ready' ? 'Scripture ready' : arrivalMessage)}</small>
         </div>
       </section>
 
       <section className="countryRail" aria-label="Country quick switcher">
         {countries.map(([code, item]) => (
-          <button key={code} className={countryCode === code ? 'selected' : ''} onClick={() => setCountryCode(code)} aria-label={`${item.country}, ${item.primaryLanguage}`}>
+          <button key={code} className={countryCode === code ? 'selected' : ''} onClick={() => { setCountryCode(code); setDetectedCoordinates(null); setDetectedLocality(null); setLocationError(''); }} aria-label={`${item.country}, ${item.primaryLanguage}`}>
             <span aria-hidden="true">{item.flag}</span>
             <strong>{item.languageCode?.toUpperCase() || (item.primaryLanguage?.slice(0, 2) || '').toUpperCase()}</strong>
             <small>{item.primaryLanguage}</small>
