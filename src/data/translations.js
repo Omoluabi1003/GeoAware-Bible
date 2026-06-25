@@ -1,46 +1,21 @@
-export const translations = {
-  web: {
-    id: 'web',
-    name: 'World English Bible Sample',
-    language: 'English',
-    license: 'Public domain',
-    reference: 'John 3:16',
-    text: 'For God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life.'
-  },
-  'sample-fr': {
-    id: 'sample-fr',
-    name: 'French Placeholder Sample',
-    language: 'French',
-    license: 'Placeholder until verified open-license text is connected',
-    reference: 'John 3:16',
-    text: 'Traduction française à connecter depuis une source ouverte vérifiée.'
-  },
-  'sample-pt': {
-    id: 'sample-pt',
-    name: 'Portuguese Placeholder Sample',
-    language: 'Portuguese',
-    license: 'Placeholder until verified open-license text is connected',
-    reference: 'John 3:16',
-    text: 'Tradução portuguesa a ser conectada a partir de uma fonte aberta verificada.'
-  },
-  'sample-sw': {
-    id: 'sample-sw',
-    name: 'Swahili Placeholder Sample',
-    language: 'Swahili',
-    license: 'Placeholder until verified open-license text is connected',
-    reference: 'John 3:16',
-    text: 'Tafsiri ya Kiswahili itaunganishwa kutoka chanzo huria kilichothibitishwa.'
-  },
-  'sample-ja': {
-    id: 'sample-ja',
-    name: 'Japanese Placeholder Sample',
-    language: 'Japanese',
-    license: 'Placeholder until verified open-license text is connected',
-    reference: 'John 3:16',
-    text: 'Verified open-license Japanese Scripture text will be connected here.'
-  }
-};
+import { getScripturePassage, scriptureTranslations } from './scripture.js';
+
+export const translations = scriptureTranslations;
 
 export function getTranslation(translationId) {
-  return translations[translationId] || translations.web;
+  const passage = getScripturePassage(translationId);
+
+  return {
+    id: passage.translationId,
+    name: passage.translationName,
+    abbreviation: passage.abbreviation,
+    language: passage.language,
+    license: passage.license.name,
+    licenseSource: passage.license.source,
+    reference: passage.reference,
+    text: passage.text,
+    book: passage.book,
+    chapter: passage.chapter,
+    verse: passage.verse
+  };
 }
