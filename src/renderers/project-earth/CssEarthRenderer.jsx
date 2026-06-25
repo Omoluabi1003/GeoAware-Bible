@@ -10,7 +10,8 @@ export function CssEarthRenderer({
   rotation = { x: 0, y: 0 },
   signalLabel = 'Earth signal',
   activeLocationLabel = '',
-  activeCountryHighlight = null
+  activeCountryHighlight = null,
+  isTransitioning = false
 }) {
   const beacon = projectGeoCoordinate(coordinates, 50, 50, rotation);
   const activeCountry = activeCountryHighlight
@@ -41,7 +42,7 @@ export function CssEarthRenderer({
       <Clouds />
       <Lighting />
       <GridLines />
-      <div className="beacon" style={beaconStyle} aria-label={signalLabel}>
+      <div className="beacon" style={beaconStyle} aria-label={signalLabel} data-ready={!isTransitioning}>
         <span aria-hidden="true" />
       </div>
       {activeLocationLabel ? (

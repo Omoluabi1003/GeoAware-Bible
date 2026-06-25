@@ -585,7 +585,7 @@ export function RealEarthRenderer({
     <div ref={containerRef} className="earth realEarth" aria-live="off" data-earth-renderer="canvas-real">
       <canvas ref={canvasRef} className="realEarthCanvas" aria-hidden="true" />
       <div className="realEarthAtmosphere" aria-hidden="true" />
-      <div className="beacon" style={beaconStyle} aria-label={signalLabel}>
+      <div className="beacon" style={beaconStyle} aria-label={signalLabel} data-ready={!isTransitioning}>
         <span aria-hidden="true" />
       </div>
       {activeLocationLabel ? (
