@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, Compass, Globe2, Languages, MapPin, Plane, ShieldCheck, Sparkles } from 'lucide-react';
 import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
@@ -14,13 +14,40 @@ const journeyStats = [
 export default function Home() {
   const [countryCode, setCountryCode] = useState('US');
   const [mode, setMode] = useState('geo');
+  const [arrivalStep, setArrivalStep] = useState('ready');
+  const arrivalTimers = useRef([]);
   const profile = languageProfiles[countryCode] || languageProfiles.US;
   const translation = useMemo(() => getTranslation(profile.translationId), [profile]);
   const countries = Object.entries(languageProfiles);
   const locationLabel = [profile.city, profile.state, profile.country].filter(Boolean).join(', ') || profile.country || 'Location available';
+  const earthPosition = {
+    '--focus-x': `${profile.coordinates.x}%`,
+    '--focus-y': `${profile.coordinates.y}%`,
+    '--earth-turn-x': `${(50 - profile.coordinates.y) * 0.16}deg`,
+    '--earth-turn-y': `${(profile.coordinates.x - 50) * 0.2}deg`
+  };
+  const arrivalMessage = arrivalStep === 'finding'
+    ? 'Finding your place...'
+    : arrivalStep === 'recognized'
+      ? 'Earth recognized'
+      : arrivalStep === 'preparing'
+        ? `Preparing Scripture for ${profile.city}, ${profile.country}`
+        : `Preparing Scripture in ${mode === 'fixed' ? 'English' : profile.primaryLanguage}`;
+
+  useEffect(() => {
+    arrivalTimers.current.forEach(clearTimeout);
+    setArrivalStep('finding');
+    arrivalTimers.current = [
+      setTimeout(() => setArrivalStep('recognized'), 260),
+      setTimeout(() => setArrivalStep('preparing'), 520),
+      setTimeout(() => setArrivalStep('ready'), 840)
+    ];
+
+    return () => arrivalTimers.current.forEach(clearTimeout);
+  }, [countryCode]);
 
   return (
-    <main className="pageShell">
+    <main className="pageShell" style={earthPosition}>
       <section className="topNav">
         <div className="brand"><span className="brandMark">✦</span> GeoAware Bible</div>
         <div className="navPill">Open-License Scripture Engine</div>
@@ -37,17 +64,17 @@ export default function Home() {
             <button className={mode === 'geo' ? 'active' : ''} onClick={() => setMode('geo')}><MapPin size={16} /> Follow My Location</button>
             <button className={mode === 'fixed' ? 'active' : ''} onClick={() => setMode('fixed')}><BookOpen size={16} /> Stay In English</button>
           </div>
-          <div className="statusStrip">
-            <span>Location confirmed</span>
+          <div className={`statusStrip ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
+            <span>{arrivalStep === 'ready' ? 'Location confirmed' : 'Geo journey active'}</span>
             <strong aria-live="polite" aria-atomic="true">{profile.flag} {locationLabel}</strong>
-            <span>Preparing Scripture in {mode === 'fixed' ? 'English' : profile.primaryLanguage}</span>
+            <span aria-live="polite" aria-atomic="true">{arrivalMessage}</span>
           </div>
         </div>
 
         <div className="earthStage" aria-label="Interactive world preview">
           <div className="orbit orbitOne" />
           <div className="orbit orbitTwo" />
-          <div className="earth">
+          <div className="earth" aria-live="off">
             <div className="atmosphere" />
             <div className="cloudBand" />
             <div className="terminator" />
@@ -60,14 +87,14 @@ export default function Home() {
             <div className="land landOne" />
             <div className="land landTwo" />
             <div className="land landThree" />
-            <div className="beacon" style={{ left: `${profile.coordinates.x}%`, top: `${profile.coordinates.y}%` }} aria-label={`${profile.country} signal`}>
+            <div className="beacon" aria-label={`${profile.country} signal`}>
               <span />
             </div>
           </div>
-          <div className="locationCard">
+          <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
             <p>{profile.region}</p>
             <h2>{profile.flag} {profile.country}</h2>
-            <small>{profile.country} · {profile.primaryLanguage} recommended</small>
+            <small>{arrivalStep === 'ready' ? `${profile.country} · ${profile.primaryLanguage} recommended` : arrivalMessage}</small>
           </div>
         </div>
       </section>
@@ -83,7 +110,7 @@ export default function Home() {
       </section>
 
       <section className="contentGrid">
-        <article className="readerPanel glassPanel">
+        <article className={`readerPanel glassPanel ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
           <div className="panelHeader">
             <p className="eyebrow"><Languages size={15} /> Recommended Translation</p>
             <span>{translation.license}</span>
