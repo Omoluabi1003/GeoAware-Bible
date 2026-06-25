@@ -13,7 +13,12 @@ const INERTIA_DECAY_PER_FRAME = 0.94;
 const MIN_INERTIA_DEGREES_PER_FRAME = 0.006;
 const AUTO_RESUME_DELAY_MS = 2200;
 const AUTO_RESUME_RAMP_MS = 7000;
-const HORIZONTAL_DRAG_THRESHOLD_PX = 6;
+const MIN_PITCH_DEGREES = -62;
+const MAX_PITCH_DEGREES = 62;
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
 
 export function getEarthMesh() {
   return {
@@ -35,15 +40,18 @@ function hasWebGL() {
 
 function projectCoordinate([lon, lat], radius, center, rotation) {
   const lambda = ((lon + rotation.y) * Math.PI) / 180;
-  const phi = ((lat + rotation.x) * Math.PI) / 180;
+  const phi = (lat * Math.PI) / 180;
+  const pitch = (clamp(rotation.x, MIN_PITCH_DEGREES, MAX_PITCH_DEGREES) * Math.PI) / 180;
   const cosPhi = Math.cos(phi);
   const x = radius * cosPhi * Math.sin(lambda);
   const y = -radius * Math.sin(phi);
   const z = radius * cosPhi * Math.cos(lambda);
+  const pitchedY = y * Math.cos(pitch) - z * Math.sin(pitch);
+  const pitchedZ = y * Math.sin(pitch) + z * Math.cos(pitch);
 
-  if (z < radius * HORIZON_EPSILON) return null;
+  if (pitchedZ < radius * HORIZON_EPSILON) return null;
 
-  return [center + x, center + y];
+  return [center + x, center + pitchedY];
 }
 
 function drawRing(ctx, ring, radius, center, rotation, { fill = true, stroke = true } = {}) {
@@ -205,17 +213,25 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
     startX: 0,
     startY: 0,
     lastX: 0,
+    lastY: 0,
     lastTime: 0,
-    dragOffset: 0,
-    velocity: 0,
+    yawOffset: 0,
+    pitchOffset: 0,
+    yawVelocity: 0,
+    pitchVelocity: 0,
     isDragging: false,
-    isHorizontalDrag: false,
     releasedAt: 0,
     autoTurn: 0,
     lastFrameAt: 0
   });
   const reducedMotion = useReducedMotion();
-  const baseRotation = useMemo(() => ({ x: rotation.x, y: rotation.y }), [rotation.x, rotation.y]);
+  const baseRotation = useMemo(
+    () => ({
+      x: clamp(rotation.x, MIN_PITCH_DEGREES, MAX_PITCH_DEGREES),
+      y: rotation.y
+    }),
+    [rotation.x, rotation.y]
+  );
 
   useEffect(() => {
     if (!hasWebGL()) {
@@ -235,10 +251,11 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
       interaction.startX = event.clientX;
       interaction.startY = event.clientY;
       interaction.lastX = event.clientX;
+      interaction.lastY = event.clientY;
       interaction.lastTime = performance.now();
-      interaction.velocity = 0;
+      interaction.yawVelocity = 0;
+      interaction.pitchVelocity = 0;
       interaction.isDragging = true;
-      interaction.isHorizontalDrag = false;
       globe.setPointerCapture?.(event.pointerId);
     };
 
@@ -246,22 +263,25 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
       const interaction = interactionRef.current;
       if (!interaction.isDragging || interaction.pointerId !== event.pointerId) return;
 
-      const dxFromStart = event.clientX - interaction.startX;
-      const dyFromStart = event.clientY - interaction.startY;
-      if (!interaction.isHorizontalDrag && Math.abs(dxFromStart) > HORIZONTAL_DRAG_THRESHOLD_PX && Math.abs(dxFromStart) > Math.abs(dyFromStart)) {
-        interaction.isHorizontalDrag = true;
-      }
-
-      if (!interaction.isHorizontalDrag) return;
-
       event.preventDefault();
       const now = performance.now();
       const dx = event.clientX - interaction.lastX;
+      const dy = event.clientY - interaction.lastY;
       const dt = Math.max(16, now - interaction.lastTime);
-      const turn = dx * DRAG_DEGREES_PER_PIXEL;
-      interaction.dragOffset += turn;
-      interaction.velocity = (turn / dt) * 16.67;
+      const yawTurn = dx * DRAG_DEGREES_PER_PIXEL;
+      const pitchTurn = dy * DRAG_DEGREES_PER_PIXEL;
+      const nextPitchOffset = clamp(
+        interaction.pitchOffset + pitchTurn,
+        MIN_PITCH_DEGREES - baseRotation.x,
+        MAX_PITCH_DEGREES - baseRotation.x
+      );
+      const appliedPitchTurn = nextPitchOffset - interaction.pitchOffset;
+      interaction.yawOffset += yawTurn;
+      interaction.pitchOffset = nextPitchOffset;
+      interaction.yawVelocity = (yawTurn / dt) * 16.67;
+      interaction.pitchVelocity = (appliedPitchTurn / dt) * 16.67;
       interaction.lastX = event.clientX;
+      interaction.lastY = event.clientY;
       interaction.lastTime = now;
       interaction.releasedAt = now;
     };
@@ -271,7 +291,6 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
       if (interaction.pointerId !== event.pointerId) return;
 
       interaction.isDragging = false;
-      interaction.isHorizontalDrag = false;
       interaction.pointerId = null;
       interaction.releasedAt = performance.now();
       globe.releasePointerCapture?.(event.pointerId);
@@ -288,7 +307,7 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
       globe.removeEventListener('pointerup', endPointerDrag);
       globe.removeEventListener('pointercancel', endPointerDrag);
     };
-  }, []);
+  }, [baseRotation.x]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -297,7 +316,11 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
     const startedAt = performance.now();
     const stillMotion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0 };
 
-    const renderStill = () => drawEarth(canvas, focus, { ...baseRotation, y: baseRotation.y + interactionRef.current.dragOffset }, stillMotion);
+    const getInteractionRotation = (earthTurn = 0) => ({
+      x: clamp(baseRotation.x + interactionRef.current.pitchOffset, MIN_PITCH_DEGREES, MAX_PITCH_DEGREES),
+      y: baseRotation.y + earthTurn + interactionRef.current.yawOffset
+    });
+    const renderStill = () => drawEarth(canvas, focus, getInteractionRotation(), stillMotion);
     const renderFrame = (now) => {
       const interaction = interactionRef.current;
       const timeSinceRelease = now - interaction.releasedAt;
@@ -309,9 +332,21 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
       const frameSeconds = interaction.lastFrameAt === 0 ? 0 : (now - interaction.lastFrameAt) / 1000;
       interaction.lastFrameAt = now;
 
-      if (!interaction.isDragging && Math.abs(interaction.velocity) > MIN_INERTIA_DEGREES_PER_FRAME && !reducedMotion) {
-        interaction.dragOffset += interaction.velocity;
-        interaction.velocity *= INERTIA_DECAY_PER_FRAME;
+      if (!interaction.isDragging && !reducedMotion) {
+        if (Math.abs(interaction.yawVelocity) > MIN_INERTIA_DEGREES_PER_FRAME) {
+          interaction.yawOffset += interaction.yawVelocity;
+          interaction.yawVelocity *= INERTIA_DECAY_PER_FRAME;
+        }
+
+        if (Math.abs(interaction.pitchVelocity) > MIN_INERTIA_DEGREES_PER_FRAME) {
+          const nextPitchOffset = clamp(
+            interaction.pitchOffset + interaction.pitchVelocity,
+            MIN_PITCH_DEGREES - baseRotation.x,
+            MAX_PITCH_DEGREES - baseRotation.x
+          );
+          interaction.pitchVelocity = (nextPitchOffset - interaction.pitchOffset) * INERTIA_DECAY_PER_FRAME;
+          interaction.pitchOffset = nextPitchOffset;
+        }
       }
 
       if (!reducedMotion) {
@@ -323,7 +358,7 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
       const cloudTurn = reducedMotion ? 0 : elapsedSeconds * CLOUD_DRIFT_DEGREES_PER_SECOND;
       const lightPhase = reducedMotion ? 0 : ((now - startedAt) / LIGHT_DRIFT_PERIOD_MS) * TWO_PI;
 
-      drawEarth(canvas, focus, { ...baseRotation, y: baseRotation.y + earthTurn + interaction.dragOffset }, { earthTurn, cloudTurn, lightPhase });
+      drawEarth(canvas, focus, getInteractionRotation(earthTurn), { earthTurn, cloudTurn, lightPhase });
       animationRef.current = window.requestAnimationFrame(renderFrame);
     };
 
