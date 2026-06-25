@@ -15,13 +15,14 @@ export function EarthRenderer({
   coordinates = { latitude: 0, longitude: 0 },
   rotation = { x: 0, y: 0 },
   signalLabel = 'Earth signal',
+  activeLocationLabel = '',
   isTransitioning = false
 }) {
   const [useFallback, setUseFallback] = useState(false);
   const handleUnavailable = useCallback(() => setUseFallback(true), []);
 
   if (useFallback) {
-    return <CssEarthRenderer coordinates={coordinates} rotation={rotation} signalLabel={signalLabel} />;
+    return <CssEarthRenderer coordinates={coordinates} rotation={rotation} signalLabel={signalLabel} activeLocationLabel={activeLocationLabel} />;
   }
 
   return (
@@ -29,6 +30,7 @@ export function EarthRenderer({
       coordinates={coordinates}
       rotation={rotation}
       signalLabel={signalLabel}
+      activeLocationLabel={activeLocationLabel}
       onUnavailable={handleUnavailable}
       isTransitioning={isTransitioning}
     />

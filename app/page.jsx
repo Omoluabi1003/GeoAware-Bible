@@ -161,6 +161,7 @@ export default function Home() {
           coordinates={earthCamera.coordinates}
           rotation={earthCamera.rotation}
           signalLabel={`${profile.country} signal`}
+          activeLocationLabel={locationLabel}
           isTransitioning={isCameraTransitioning}
         />
 
