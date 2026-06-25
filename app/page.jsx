@@ -25,7 +25,7 @@ export default function Home() {
       .slice(0, 2)
   ), [profile.alternates, profile.primaryLanguage]);
   const countries = Object.entries(languageProfiles);
-  const locationLabel = [profile.city, profile.state || profile.country].filter(Boolean).join(', ') || profile.country || 'Location available';
+  const locationLabel = [profile.city, profile.state || profile.region].filter(Boolean).join(', ') || profile.country || 'Location available';
   const earthPosition = {
     '--focus-x': `${profile.coordinates.x}%`,
     '--focus-y': `${profile.coordinates.y}%`,
@@ -97,7 +97,7 @@ export default function Home() {
         {countries.map(([code, item]) => (
           <button key={code} className={countryCode === code ? 'selected' : ''} onClick={() => setCountryCode(code)}>
             <span aria-hidden="true">{item.flag}</span>
-            <strong>{item.country}</strong>
+            <strong>{item.languageCode?.toUpperCase() || item.primaryLanguage.slice(0, 2).toUpperCase()}</strong>
             <small>{item.primaryLanguage}</small>
           </button>
         ))}
