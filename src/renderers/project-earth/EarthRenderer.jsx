@@ -14,7 +14,8 @@ import { RealEarthRenderer } from './RealEarthRenderer.jsx';
 export function EarthRenderer({
   coordinates = { latitude: 0, longitude: 0 },
   rotation = { x: 0, y: 0 },
-  signalLabel = 'Earth signal'
+  signalLabel = 'Earth signal',
+  isTransitioning = false
 }) {
   const [useFallback, setUseFallback] = useState(false);
   const handleUnavailable = useCallback(() => setUseFallback(true), []);
@@ -29,6 +30,7 @@ export function EarthRenderer({
       rotation={rotation}
       signalLabel={signalLabel}
       onUnavailable={handleUnavailable}
+      isTransitioning={isTransitioning}
     />
   );
 }

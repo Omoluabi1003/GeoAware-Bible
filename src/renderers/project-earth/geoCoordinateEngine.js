@@ -19,7 +19,7 @@ export function rotationForGeoCoordinate(coordinate) {
   const { latitude, longitude } = normalizeGeoCoordinate(coordinate);
 
   return {
-    x: clamp(latitude * 0.72, MIN_PITCH_DEGREES, MAX_PITCH_DEGREES),
+    x: clamp(-latitude, MIN_PITCH_DEGREES, MAX_PITCH_DEGREES),
     y: -longitude
   };
 }
