@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Compass, Globe2, Languages, MapPin, Plane, ShieldCheck, Sparkles } from 'lucide-react';
 import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
@@ -15,7 +15,6 @@ export default function Home() {
   const [countryCode, setCountryCode] = useState('US');
   const [mode, setMode] = useState('geo');
   const [arrivalStep, setArrivalStep] = useState('ready');
-  const arrivalTimers = useRef([]);
   const profile = languageProfiles[countryCode] || languageProfiles.US;
   const translation = useMemo(() => getTranslation(profile.translationId), [profile]);
   const countries = Object.entries(languageProfiles);
@@ -32,18 +31,17 @@ export default function Home() {
       ? 'Earth recognized'
       : arrivalStep === 'preparing'
         ? `Preparing Scripture for ${profile.city}, ${profile.country}`
-        : `Preparing Scripture in ${mode === 'fixed' ? 'English' : profile.primaryLanguage}`;
+        : `Scripture ready in ${mode === 'fixed' ? 'English' : profile.primaryLanguage}`;
 
   useEffect(() => {
-    arrivalTimers.current.forEach(clearTimeout);
     setArrivalStep('finding');
-    arrivalTimers.current = [
+    const timers = [
       setTimeout(() => setArrivalStep('recognized'), 260),
       setTimeout(() => setArrivalStep('preparing'), 520),
       setTimeout(() => setArrivalStep('ready'), 840)
     ];
 
-    return () => arrivalTimers.current.forEach(clearTimeout);
+    return () => timers.forEach(clearTimeout);
   }, [countryCode]);
 
   return (
@@ -66,7 +64,7 @@ export default function Home() {
           </div>
           <div className={`statusStrip ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
             <span>{arrivalStep === 'ready' ? 'Location confirmed' : 'Geo journey active'}</span>
-            <strong aria-live="polite" aria-atomic="true">{profile.flag} {locationLabel}</strong>
+            <strong aria-live="polite" aria-atomic="true"><span aria-hidden="true">{profile.flag}</span> {locationLabel}</strong>
             <span aria-live="polite" aria-atomic="true">{arrivalMessage}</span>
           </div>
         </div>
@@ -74,26 +72,28 @@ export default function Home() {
         <div className="earthStage" aria-label="Interactive world preview">
           <div className="orbit orbitOne" />
           <div className="orbit orbitTwo" />
-          <div className="earth" aria-live="off">
-            <div className="atmosphere" />
-            <div className="cloudBand" />
-            <div className="terminator" />
-            <div className="earthShade" />
-            <div className="latitude latOne" />
-            <div className="latitude latTwo" />
-            <div className="latitude latThree" />
-            <div className="longitude lonOne" />
-            <div className="longitude lonTwo" />
-            <div className="land landOne" />
-            <div className="land landTwo" />
-            <div className="land landThree" />
-            <div className="beacon" aria-label={`${profile.country} signal`}>
-              <span />
+          <div className="earthWrapper">
+            <div className="earth" aria-live="off">
+              <div className="atmosphere" />
+              <div className="cloudBand" />
+              <div className="terminator" />
+              <div className="earthShade" />
+              <div className="latitude latOne" />
+              <div className="latitude latTwo" />
+              <div className="latitude latThree" />
+              <div className="longitude lonOne" />
+              <div className="longitude lonTwo" />
+              <div className="land landOne" />
+              <div className="land landTwo" />
+              <div className="land landThree" />
+              <div className="beacon" aria-label={`${profile.country} signal`}>
+                <span />
+              </div>
             </div>
           </div>
           <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
             <p>{profile.region}</p>
-            <h2>{profile.flag} {profile.country}</h2>
+            <h2><span aria-hidden="true">{profile.flag}</span> {profile.country}</h2>
             <small>{arrivalStep === 'ready' ? `${profile.country} · ${profile.primaryLanguage} recommended` : arrivalMessage}</small>
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function Home() {
       <section className="countryRail" aria-label="Country quick switcher">
         {countries.map(([code, item]) => (
           <button key={code} className={countryCode === code ? 'selected' : ''} onClick={() => setCountryCode(code)}>
-            <span>{item.flag}</span>
+            <span aria-hidden="true">{item.flag}</span>
             <strong>{item.country}</strong>
             <small><span>{item.country}</span><em>·</em><span>{item.primaryLanguage}</span></small>
           </button>
