@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, Globe2, Languages, MapPin, Plane } from 'lucide-react';
 import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
@@ -12,11 +12,52 @@ const journeyStats = [
   ['Mode', 'Geo']
 ];
 
+const ARRIVAL_TIMING = {
+  recognized: 220,
+  preparing: 460,
+  ready: 760
+};
+
+function easeOutCubic(progress) {
+  return 1 - (1 - progress) ** 3;
+}
+
+function resolveEarthCamera(profile) {
+  const coordinates = profile.coordinates || languageProfiles.US.coordinates;
+  return {
+    focus: { x: coordinates.x, y: coordinates.y },
+    rotation: {
+      x: (50 - coordinates.y) * 0.16,
+      y: (coordinates.x - 50) * 0.2
+    }
+  };
+}
+
+function interpolateCamera(from, to, progress) {
+  const eased = easeOutCubic(progress);
+  const lerp = (start, end) => start + (end - start) * eased;
+
+  return {
+    focus: {
+      x: lerp(from.focus.x, to.focus.x),
+      y: lerp(from.focus.y, to.focus.y)
+    },
+    rotation: {
+      x: lerp(from.rotation.x, to.rotation.x),
+      y: lerp(from.rotation.y, to.rotation.y)
+    }
+  };
+}
+
 export default function Home() {
   const [countryCode, setCountryCode] = useState('US');
   const [mode, setMode] = useState('geo');
   const [arrivalStep, setArrivalStep] = useState('ready');
   const profile = languageProfiles[countryCode] || languageProfiles.US;
+  const targetEarthCamera = useMemo(() => resolveEarthCamera(profile), [profile]);
+  const animationFrameRef = useRef(null);
+  const cameraRef = useRef(targetEarthCamera);
+  const [earthCamera, setEarthCamera] = useState(targetEarthCamera);
   const activeTranslation = useMemo(() => (
     mode === 'fixed' ? getTranslation('web') : getTranslation(profile.translationId)
   ), [mode, profile.translationId]);
@@ -27,17 +68,10 @@ export default function Home() {
   ), [profile.alternates, profile.primaryLanguage]);
   const countries = Object.entries(languageProfiles);
   const locationLabel = [profile.city, profile.state].filter(Boolean).join(', ') || profile.country || 'Location available';
-  const earthCamera = useMemo(() => ({
-    focus: { x: profile.coordinates.x, y: profile.coordinates.y },
-    rotation: {
-      x: (50 - profile.coordinates.y) * 0.16,
-      y: (profile.coordinates.x - 50) * 0.2
-    }
-  }), [profile.coordinates.x, profile.coordinates.y]);
   const arrivalMessage = arrivalStep === 'finding'
-    ? 'Finding your place...'
+    ? `Finding ${profile.country}...`
     : arrivalStep === 'recognized'
-      ? 'Earth recognized'
+      ? `${profile.flag} ${locationLabel} recognized`
       : arrivalStep === 'preparing'
         ? `Preparing Scripture for ${profile.city}, ${profile.country}`
         : `Scripture ready in ${mode === 'fixed' ? 'English' : profile.primaryLanguage}`;
@@ -45,13 +79,37 @@ export default function Home() {
   useEffect(() => {
     setArrivalStep('finding');
     const timers = [
-      setTimeout(() => setArrivalStep('recognized'), 260),
-      setTimeout(() => setArrivalStep('preparing'), 520),
-      setTimeout(() => setArrivalStep('ready'), 840)
+      setTimeout(() => setArrivalStep('recognized'), ARRIVAL_TIMING.recognized),
+      setTimeout(() => setArrivalStep('preparing'), ARRIVAL_TIMING.preparing),
+      setTimeout(() => setArrivalStep('ready'), ARRIVAL_TIMING.ready)
     ];
 
     return () => timers.forEach(clearTimeout);
   }, [countryCode]);
+
+  useEffect(() => {
+    if (animationFrameRef.current) window.cancelAnimationFrame(animationFrameRef.current);
+
+    const startedAt = performance.now();
+    const startCamera = cameraRef.current;
+
+    const animateFocus = (now) => {
+      const progress = Math.min(1, (now - startedAt) / ARRIVAL_TIMING.ready);
+      const nextCamera = interpolateCamera(startCamera, targetEarthCamera, progress);
+      cameraRef.current = nextCamera;
+      setEarthCamera(nextCamera);
+
+      if (progress < 1) {
+        animationFrameRef.current = window.requestAnimationFrame(animateFocus);
+      }
+    };
+
+    animationFrameRef.current = window.requestAnimationFrame(animateFocus);
+
+    return () => {
+      if (animationFrameRef.current) window.cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, [targetEarthCamera]);
 
   return (
     <main className="pageShell">
