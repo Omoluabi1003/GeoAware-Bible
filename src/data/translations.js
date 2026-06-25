@@ -30,6 +30,14 @@ export const translations = {
     license: 'Placeholder until verified open-license text is connected',
     reference: 'John 3:16',
     text: 'Tafsiri ya Kiswahili itaunganishwa kutoka chanzo huria kilichothibitishwa.'
+  },
+  'sample-ja': {
+    id: 'sample-ja',
+    name: 'Japanese Placeholder Sample',
+    language: 'Japanese',
+    license: 'Placeholder until verified open-license text is connected',
+    reference: 'John 3:16',
+    text: 'Verified open-license Japanese Scripture text will be connected here.'
   }
 };
 
