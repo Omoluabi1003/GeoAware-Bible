@@ -1,7 +1,9 @@
 export const languageProfiles = {
   US: {
     country: 'United States',
-    region: 'Florida signal ready',
+    region: 'Location confirmed',
+    city: 'Orlando',
+    state: 'Florida',
     primaryLanguage: 'English',
     languageCode: 'en',
     translationId: 'web',
@@ -13,7 +15,9 @@ export const languageProfiles = {
   },
   NG: {
     country: 'Nigeria',
-    region: 'West Africa signal ready',
+    region: 'Location confirmed',
+    city: 'Lagos',
+    state: 'Lagos',
     primaryLanguage: 'English',
     languageCode: 'en',
     translationId: 'web',
@@ -25,7 +29,9 @@ export const languageProfiles = {
   },
   BR: {
     country: 'Brazil',
-    region: 'South America signal ready',
+    region: 'Location confirmed',
+    city: 'Brasília',
+    state: 'Federal District',
     primaryLanguage: 'Portuguese',
     languageCode: 'pt',
     translationId: 'sample-pt',
@@ -37,7 +43,9 @@ export const languageProfiles = {
   },
   KE: {
     country: 'Kenya',
-    region: 'East Africa signal ready',
+    region: 'Location confirmed',
+    city: 'Nairobi',
+    state: 'Nairobi County',
     primaryLanguage: 'Swahili',
     languageCode: 'sw',
     translationId: 'sample-sw',
@@ -49,7 +57,8 @@ export const languageProfiles = {
   },
   FR: {
     country: 'France',
-    region: 'Western Europe signal ready',
+    region: 'Location confirmed',
+    city: 'Paris',
     primaryLanguage: 'French',
     languageCode: 'fr',
     translationId: 'sample-fr',
@@ -61,7 +70,8 @@ export const languageProfiles = {
   },
   JP: {
     country: 'Japan',
-    region: 'East Asia signal ready',
+    region: 'Location confirmed',
+    city: 'Tokyo',
     primaryLanguage: 'Japanese',
     languageCode: 'ja',
     translationId: 'sample-ja',

@@ -17,6 +17,7 @@ export default function Home() {
   const profile = languageProfiles[countryCode] || languageProfiles.US;
   const translation = useMemo(() => getTranslation(profile.translationId), [profile]);
   const countries = Object.entries(languageProfiles);
+  const locationLabel = [profile.city, profile.state, profile.country].filter(Boolean).join(', ') || profile.country || 'Location available';
 
   return (
     <main className="pageShell">
@@ -36,9 +37,9 @@ export default function Home() {
             <button className={mode === 'geo' ? 'active' : ''} onClick={() => setMode('geo')}><MapPin size={16} /> Follow My Location</button>
             <button className={mode === 'fixed' ? 'active' : ''} onClick={() => setMode('fixed')}><BookOpen size={16} /> Stay In English</button>
           </div>
-          <div className="statusStrip">
-            <span>Locating signal</span>
-            <strong>{profile.flag} {profile.country}</strong>
+          <div className="statusStrip" aria-live="polite">
+            <span>Location confirmed</span>
+            <strong>{profile.flag} {locationLabel}</strong>
             <span>Preparing Scripture in {mode === 'fixed' ? 'English' : profile.primaryLanguage}</span>
           </div>
         </div>
@@ -66,7 +67,7 @@ export default function Home() {
           <div className="locationCard">
             <p>{profile.region}</p>
             <h2>{profile.flag} {profile.country}</h2>
-            <small>{profile.primaryLanguage} recommended</small>
+            <small>{profile.country} · {profile.primaryLanguage} recommended</small>
           </div>
         </div>
       </section>
@@ -76,7 +77,7 @@ export default function Home() {
           <button key={code} className={countryCode === code ? 'selected' : ''} onClick={() => setCountryCode(code)}>
             <span>{item.flag}</span>
             <strong>{item.country}</strong>
-            <small>{item.primaryLanguage}</small>
+            <small><span>{item.country}</span><em>·</em><span>{item.primaryLanguage}</span></small>
           </button>
         ))}
       </section>
