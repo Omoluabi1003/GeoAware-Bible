@@ -1,9 +1,22 @@
 {
+  "extends": {
+    "name": "GeoAware OS",
+    "version": "1.0.0",
+    "source": "https://github.com/Omoluabi1003/GeoAware-OS",
+    "inherits": [
+      "GDL",
+      "GEC",
+      "GPC",
+      "GAIC",
+      "GDS"
+    ]
+  },
   "founder": {
     "name": "Paul Iyogun",
     "vision": "To be remembered as the guy who used code to walk pilgrims through Scripture.",
     "guiding_principle": "Scripture is the destination. Technology is only the road.",
-    "title": "Founder and Chief Architect"
+    "title": "Founder and Chief Architect",
+    "organization": "ETL GIS Consulting LLC"
   },
   "project_identity": {
     "name": "GeoAware Bible",
@@ -14,6 +27,7 @@
     "philosophy": "Use technology with reverence to help pilgrims encounter Scripture through geography, language, history, and thoughtful design."
   },
   "mission": "Help pilgrims walk through Scripture with greater awareness of geography, language, history, and reverent design while keeping Scripture as the primary experience.",
+  "geoaware_os_rule": "All future features must preserve GeoAware OS while keeping Scripture central to GeoAware Bible.",
   "engineering_principles": [
     "Scripture remains the primary experience.",
     "Technology exists to illuminate Scripture.",
@@ -23,7 +37,11 @@
     "Offline-first where practical.",
     "Accessibility is mandatory.",
     "Performance comes before visual effects.",
-    "Every commit should have a clear architectural purpose."
+    "Every commit should have a clear architectural purpose.",
+    "The world is the interface.",
+    "One screen deserves one hero.",
+    "Motion must have meaning.",
+    "Beauty is achieved through restraint."
   ],
   "design_principles": [
     "Calm",
@@ -34,7 +52,9 @@
     "Readable",
     "Human-centered",
     "Geographically aware",
-    "Language inclusive"
+    "Language inclusive",
+    "Floating, never stacked",
+    "Context before content"
   ],
   "naming_conventions": {
     "Home": "Journey",
@@ -62,7 +82,7 @@
     {
       "project": "Project Exodus",
       "focus": "Photorealistic Living Earth",
-      "status": "active",
+      "status": "complete",
       "goals": [
         "Upgrade the Living Earth visual layer.",
         "Preserve Scripture reader behavior.",
@@ -82,7 +102,8 @@
     },
     {
       "project": "Project Emmaus",
-      "focus": "AI Guide"
+      "focus": "AI Guide and contextual Scripture journey",
+      "status": "next"
     },
     {
       "project": "Project Pentecost",
@@ -99,17 +120,17 @@
     "performance_before_visual_effects": true,
     "no_unlicensed_bible_text": true,
     "no_addictive_mechanics": true,
-    "no_unnecessary_dependencies": true
+    "no_unnecessary_dependencies": true,
+    "geoaware_os_alignment_required": true
   },
   "acceptance_criteria": [
-    "All requested files exist.",
-    "Markdown files are meaningful and not placeholders.",
-    ".geoaware/constitution.json is valid JSON.",
     "Founder attribution is included respectfully.",
-    "No app behavior changes.",
-    "No dependencies added.",
+    "GeoAware OS inheritance remains intact.",
+    "Scripture remains central.",
+    "No app behavior changes without explicit product intent.",
+    "No unnecessary dependencies added.",
     "Build remains unaffected."
   ],
-  "current_phase": "Project Exodus",
-  "next_focus": "Photorealistic Living Earth"
+  "current_phase": "Project Emmaus",
+  "next_focus": "AI Guide and contextual Scripture journey"
 }
