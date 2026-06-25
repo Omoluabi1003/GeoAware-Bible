@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, Globe2, Languages, MapPin, Plane } from 'lucide-react';
+import { getGeoContext } from '../src/data/geoContext.js';
 import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
 import ProjectEarthRenderer from '../src/renderers/project-earth/ProjectEarthRenderer.jsx';
@@ -70,6 +71,7 @@ export default function Home() {
   const [mode, setMode] = useState('geo');
   const [arrivalStep, setArrivalStep] = useState('ready');
   const profile = languageProfiles[countryCode] || languageProfiles.US;
+  const GeoContext = useMemo(() => getGeoContext(countryCode), [countryCode]);
   const targetEarthCamera = useMemo(() => resolveEarthCamera(profile), [profile]);
   const animationFrameRef = useRef(null);
   const cameraRef = useRef(targetEarthCamera);
@@ -160,7 +162,7 @@ export default function Home() {
         <ProjectEarthRenderer
           coordinates={earthCamera.coordinates}
           rotation={earthCamera.rotation}
-          signalLabel={`${profile.country} signal`}
+          signalLabel={`${GeoContext.country} signal`}
           activeLocationLabel={locationLabel}
           activeCountryHighlight={profile.countryHighlight}
           isTransitioning={isCameraTransitioning}
