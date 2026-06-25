@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Globe2, Languages, MapPin, Plane } from 'lucide-react';
 import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
+import ProjectEarthRenderer from '../src/renderers/project-earth/ProjectEarthRenderer.jsx';
 
 const journeyStats = [
   ['Countries', '6'],
@@ -26,12 +27,13 @@ export default function Home() {
   ), [profile.alternates, profile.primaryLanguage]);
   const countries = Object.entries(languageProfiles);
   const locationLabel = [profile.city, profile.state].filter(Boolean).join(', ') || profile.country || 'Location available';
-  const earthPosition = {
-    '--focus-x': `${profile.coordinates.x}%`,
-    '--focus-y': `${profile.coordinates.y}%`,
-    '--earth-turn-x': `${(50 - profile.coordinates.y) * 0.16}deg`,
-    '--earth-turn-y': `${(profile.coordinates.x - 50) * 0.2}deg`
-  };
+  const earthCamera = useMemo(() => ({
+    focus: { x: profile.coordinates.x, y: profile.coordinates.y },
+    rotation: {
+      x: (50 - profile.coordinates.y) * 0.16,
+      y: (profile.coordinates.x - 50) * 0.2
+    }
+  }), [profile.coordinates.x, profile.coordinates.y]);
   const arrivalMessage = arrivalStep === 'finding'
     ? 'Finding your place...'
     : arrivalStep === 'recognized'
@@ -52,7 +54,7 @@ export default function Home() {
   }, [countryCode]);
 
   return (
-    <main className="pageShell" style={earthPosition}>
+    <main className="pageShell">
       <section className="topNav">
         <div className="brand"><span className="brandMark">✦</span> GeoAware Bible</div>
       </section>
@@ -66,26 +68,11 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="earthStage" aria-label="Interactive world preview">
-          <div className="orbit orbitOne" />
-          <div className="orbit orbitTwo" />
-          <div className="earthWrapper">
-            <div className="earth" aria-live="off">
-              <div className="atmosphere" />
-              <div className="cloudBand" />
-              <div className="terminator" />
-              <div className="earthShade" />
-              <div className="latitude latOne" />
-              <div className="latitude latTwo" />
-              <div className="latitude latThree" />
-              <div className="longitude lonOne" />
-              <div className="longitude lonTwo" />
-              <div className="beacon" aria-label={`${profile.country} signal`}>
-                <span />
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProjectEarthRenderer
+          focus={earthCamera.focus}
+          rotation={earthCamera.rotation}
+          signalLabel={`${profile.country} signal`}
+        />
 
         <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
           <h2><span aria-hidden="true">{profile.flag}</span> {locationLabel}</h2>
