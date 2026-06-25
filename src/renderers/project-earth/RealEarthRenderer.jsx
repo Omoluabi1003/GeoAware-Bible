@@ -9,12 +9,12 @@ const HORIZON_EPSILON = -0.015;
 const LABEL_OFFSET_PERCENT = 4.2;
 const LABEL_EDGE_PADDING_PERCENT = 7.5;
 const EARTH_ROTATION_DEGREES_PER_SECOND = 0.25;
-const CLOUD_DRIFT_DEGREES_PER_SECOND = 0.012;
+const CLOUD_DRIFT_DEGREES_PER_SECOND = 0.08;
 const LIGHT_DRIFT_PERIOD_MS = 1200000;
 const DRAG_DEGREES_PER_PIXEL = 0.18;
 const INERTIA_DAMPING_PER_SECOND = 3.2;
 const MIN_INERTIA_DEGREES_PER_SECOND = 0.36;
-const AUTO_RESUME_DELAY_MS = 6000;
+const AUTO_RESUME_DELAY_MS = 2000;
 const AUTO_RESUME_RAMP_MS = 2400;
 const MIN_PITCH_DEGREES = -62;
 const MAX_PITCH_DEGREES = 62;
@@ -232,7 +232,7 @@ function drawCountryHighlight(ctx, activeCountryHighlight, radius, center, rotat
   ctx.restore();
 }
 
-function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0 }, activeCountryHighlight = null) {
+function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0, framePulse: 1 }, activeCountryHighlight = null) {
   const rect = canvas.getBoundingClientRect();
   const size = Math.max(1, Math.round(rect.width));
   const scale = window.devicePixelRatio || 1;
@@ -252,14 +252,28 @@ function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloud
   ctx.arc(center, center, radius, 0, TWO_PI);
   ctx.clip();
 
-  const ocean = ctx.createRadialGradient(size * 0.32, size * 0.2, size * 0.03, center, center, radius);
-  ocean.addColorStop(0, '#6bc4d8');
-  ocean.addColorStop(0.2, '#1d86a8');
-  ocean.addColorStop(0.48, '#075174');
-  ocean.addColorStop(0.76, '#062d58');
+  const lightX = size * (0.24 + Math.sin(motion.lightPhase) * 0.035);
+  const lightY = size * (0.18 + Math.cos(motion.lightPhase) * 0.02);
+  const ocean = ctx.createRadialGradient(lightX, lightY, size * 0.025, center, center, radius);
+  ocean.addColorStop(0, '#86dff0');
+  ocean.addColorStop(0.18, '#2d9ec0');
+  ocean.addColorStop(0.42, '#075f87');
+  ocean.addColorStop(0.72, '#062d58');
   ocean.addColorStop(1, '#010817');
   ctx.fillStyle = ocean;
   ctx.fillRect(0, 0, size, size);
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = 0.22;
+  const oceanCaustics = ctx.createLinearGradient(size * 0.12, size * 0.16, size * 0.88, size * 0.84);
+  oceanCaustics.addColorStop(0, 'rgba(210, 246, 255, .22)');
+  oceanCaustics.addColorStop(0.28, 'rgba(65, 176, 206, .08)');
+  oceanCaustics.addColorStop(0.58, 'rgba(255, 255, 255, .045)');
+  oceanCaustics.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = oceanCaustics;
+  ctx.fillRect(0, 0, size, size);
+  ctx.restore();
 
   ctx.globalAlpha = 1;
   const land = ctx.createLinearGradient(size * 0.24, size * 0.1, size * 0.76, size * 0.9);
@@ -299,16 +313,16 @@ function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloud
   drawCountryHighlight(ctx, activeCountryHighlight, radius, center, rotation, size);
 
   ctx.save();
-  ctx.globalCompositeOperation = 'screen';
-  ctx.globalAlpha = 0.18;
-  ctx.strokeStyle = 'rgba(255, 255, 255, .42)';
-  ctx.lineWidth = Math.max(5, size * 0.012);
-  ctx.filter = `blur(${Math.max(2, size * 0.006)}px)`;
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.globalAlpha = 0.075;
+  ctx.strokeStyle = 'rgba(2, 8, 18, .72)';
+  ctx.lineWidth = Math.max(4, size * 0.011);
+  ctx.filter = `blur(${Math.max(2, size * 0.004)}px)`;
   mesh.rings.forEach((ring) =>
     drawRing(
       ctx,
-      ring.map(([lon, lat]) => [lon + motion.cloudTurn, lat + Math.sin((lon + motion.cloudTurn) * Math.PI / 180) * 1.2]),
-      radius * 1.006,
+      ring.map(([lon, lat]) => [lon + motion.cloudTurn + 1.2, lat - 0.8 + Math.sin((lon + motion.cloudTurn) * Math.PI / 180) * 1.35]),
+      radius * 1.001,
       center,
       rotation,
       { fill: false, stroke: true }
@@ -316,8 +330,25 @@ function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloud
   );
   ctx.restore();
 
-  const lightX = size * (0.24 + Math.sin(motion.lightPhase) * 0.035);
-  const lightY = size * (0.18 + Math.cos(motion.lightPhase) * 0.02);
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = 0.26;
+  ctx.strokeStyle = 'rgba(255, 255, 255, .62)';
+  ctx.lineWidth = Math.max(4, size * 0.01);
+  ctx.filter = `blur(${Math.max(1.2, size * 0.0038)}px)`;
+  mesh.rings.forEach((ring, ringIndex) => {
+    if (ringIndex % 3 === 1) return;
+    drawRing(
+      ctx,
+      ring.map(([lon, lat]) => [lon + motion.cloudTurn, lat + Math.sin((lon + motion.cloudTurn) * Math.PI / 180) * 1.2]),
+      radius * 1.007,
+      center,
+      rotation,
+      { fill: false, stroke: true }
+    );
+  });
+  ctx.restore();
+
   const shadeX = size * (0.72 + Math.sin(motion.lightPhase + Math.PI) * 0.025);
   const shadeY = size * (0.68 + Math.cos(motion.lightPhase + Math.PI) * 0.018);
   const shade = ctx.createRadialGradient(lightX, lightY, size * 0.08, shadeX, shadeY, radius * 1.04);
@@ -327,13 +358,34 @@ function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloud
   ctx.fillStyle = shade;
   ctx.fillRect(0, 0, size, size);
 
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  const rim = ctx.createRadialGradient(center, center, radius * 0.62, center, center, radius * 1.02);
+  rim.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  rim.addColorStop(0.78, 'rgba(0, 0, 0, 0)');
+  rim.addColorStop(0.91, 'rgba(116, 201, 255, .18)');
+  rim.addColorStop(1, 'rgba(204, 244, 255, .42)');
+  ctx.fillStyle = rim;
+  ctx.fillRect(0, 0, size, size);
+  ctx.restore();
+
   const beacon = projectGeoCoordinate(coordinates, radius, center, rotation);
   if (beacon.visible) {
-    ctx.globalAlpha = 0.28;
+    const pulse = clamp(motion.framePulse ?? 1, 0.65, 1.35);
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    const beaconGlow = ctx.createRadialGradient(beacon.x, beacon.y, 0, beacon.x, beacon.y, Math.max(30, size * 0.095) * pulse);
+    beaconGlow.addColorStop(0, 'rgba(255, 239, 184, .58)');
+    beaconGlow.addColorStop(0.42, 'rgba(32, 209, 143, .18)');
+    beaconGlow.addColorStop(1, 'rgba(32, 209, 143, 0)');
+    ctx.fillStyle = beaconGlow;
+    ctx.fillRect(0, 0, size, size);
+    ctx.globalAlpha = 0.46;
     ctx.fillStyle = '#f7d77a';
     ctx.beginPath();
-    ctx.arc(beacon.x, beacon.y, Math.max(6, size * 0.018), 0, TWO_PI);
+    ctx.arc(beacon.x, beacon.y, Math.max(6, size * 0.018) * pulse, 0, TWO_PI);
     ctx.fill();
+    ctx.restore();
   }
   ctx.restore();
 }
@@ -487,7 +539,7 @@ export function RealEarthRenderer({
     if (!canvas) return undefined;
 
     const startedAt = performance.now();
-    const stillMotion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0 };
+    const stillMotion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0, framePulse: 1 };
 
     const getInteractionRotation = () => composePhysicalRotation(baseRotation, interactionRef.current);
     const updateBeacon = (nextRotation) => {
@@ -511,7 +563,9 @@ export function RealEarthRenderer({
         : Math.min(1, Math.max(0, (timeSinceRelease - AUTO_RESUME_DELAY_MS) / AUTO_RESUME_RAMP_MS));
       const autoMultiplier = interaction.isDragging || isTransitioning ? 0 : resumeProgress;
 
-      const frameSeconds = interaction.lastFrameAt === 0 ? 0 : (now - interaction.lastFrameAt) / 1000;
+      const rawFrameMs = interaction.lastFrameAt === 0 ? 16.7 : now - interaction.lastFrameAt;
+      const frameSeconds = rawFrameMs / 1000;
+      const framePulse = clamp(16.7 / Math.max(12, rawFrameMs), 0.72, 1.28);
       interaction.lastFrameAt = now;
 
       if (!interaction.isDragging && !reducedMotion) {
@@ -551,7 +605,7 @@ export function RealEarthRenderer({
       const lightPhase = reducedMotion ? 0 : ((now - startedAt) / LIGHT_DRIFT_PERIOD_MS) * TWO_PI;
 
       const nextRotation = getInteractionRotation();
-      drawEarth(canvas, coordinates, nextRotation, { earthTurn, cloudTurn, lightPhase }, activeCountryHighlight);
+      drawEarth(canvas, coordinates, nextRotation, { earthTurn, cloudTurn, lightPhase, framePulse }, activeCountryHighlight);
       updateBeacon(nextRotation);
       animationRef.current = window.requestAnimationFrame(renderFrame);
     };
@@ -574,7 +628,7 @@ export function RealEarthRenderer({
   const labelX = clamp(projectedBeacon.x + labelXDirection * LABEL_OFFSET_PERCENT, LABEL_EDGE_PADDING_PERCENT, 100 - LABEL_EDGE_PADDING_PERCENT);
   const labelY = clamp(projectedBeacon.y + labelYDirection * (LABEL_OFFSET_PERCENT * 0.65), LABEL_EDGE_PADDING_PERCENT, 100 - LABEL_EDGE_PADDING_PERCENT);
   const labelOpacity = projectedBeacon.visible ? Math.min(0.82, Math.max(0, projectedBeacon.fade ?? 1) * 0.82) : 0;
-  const beaconStyle = { '--beacon-x': `${projectedBeacon.x}%`, '--beacon-y': `${projectedBeacon.y}%`, opacity: projectedBeacon.visible ? 1 : 0.18 };
+  const beaconStyle = { '--beacon-x': `${projectedBeacon.x}%`, '--beacon-y': `${projectedBeacon.y}%`, '--pulse-energy': `${Math.max(0.72, Math.min(1.28, projectedBeacon.fade || 1))}`, opacity: projectedBeacon.visible ? 1 : 0.18 };
   const labelStyle = {
     '--label-x': `${labelX}%`,
     '--label-y': `${labelY}%`,
