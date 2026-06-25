@@ -1,0 +1,95 @@
+{
+  "founder": {
+    "name": "Paul Iyogun",
+    "role": "Founder and Chief Architect",
+    "vision": "To be remembered as the guy who used code to walk pilgrims through Scripture.",
+    "guiding_principle": "Scripture is the destination. Technology is only the road."
+  },
+  "project_identity": {
+    "name": "GeoAware Bible",
+    "architectural_codename": "Project Genesis",
+    "category": "Scripture Experience Platform",
+    "tagline": "Walk the Word.",
+    "guiding_question": "Does this help the pilgrim walk the Word?",
+    "philosophy": "Use technology with reverence to help pilgrims encounter Scripture through geography, language, history, and thoughtful design."
+  },
+  "mission": "Help pilgrims walk through Scripture with greater awareness of geography, language, history, and reverent design while keeping Scripture as the primary experience.",
+  "engineering_principles": [
+    "Scripture remains the primary experience.",
+    "Technology exists to illuminate Scripture.",
+    "AI assists but never replaces biblical study.",
+    "Maps reveal context rather than becoming distractions.",
+    "Animations must be subtle and meaningful.",
+    "Offline-first where practical.",
+    "Accessibility is mandatory.",
+    "Performance comes before visual effects.",
+    "Every commit should have a clear architectural purpose."
+  ],
+  "design_principles": [
+    "Calm",
+    "Minimal",
+    "Reverent",
+    "Timeless",
+    "Elegant",
+    "Readable",
+    "Human-centered",
+    "Geographically aware",
+    "Language inclusive"
+  ],
+  "naming_conventions": {
+    "Home": "Journey",
+    "Dashboard": "Pilgrim",
+    "Settings": "Pilgrim Pack",
+    "Bookmarks": "Milestones",
+    "Reading Plan": "Walking Plan",
+    "Continue Reading": "Continue Walking",
+    "User": "Pilgrim"
+  },
+  "non_goals": [
+    "Do not add gamification.",
+    "Do not add social-media mechanics.",
+    "Do not optimize for screen time.",
+    "Do not prioritize visual spectacle over Scripture.",
+    "Do not introduce feature bloat.",
+    "Do not use copyrighted Bible text without verified permission."
+  ],
+  "roadmap": [
+    {
+      "project": "Project Genesis",
+      "focus": "Foundation and documentation"
+    },
+    {
+      "project": "Project Exodus",
+      "focus": "Photorealistic Living Earth"
+    },
+    {
+      "project": "Project Emmaus",
+      "focus": "AI Guide"
+    },
+    {
+      "project": "Project Pentecost",
+      "focus": "Global language engine"
+    },
+    {
+      "project": "Project Revelation",
+      "focus": "Worldwide pilgrimage platform"
+    }
+  ],
+  "quality_gate": {
+    "scripture_first": true,
+    "accessibility_required": true,
+    "performance_before_visual_effects": true,
+    "no_unlicensed_bible_text": true,
+    "no_addictive_mechanics": true,
+    "no_unnecessary_dependencies": true
+  },
+  "acceptance_criteria": [
+    "All requested files exist.",
+    "Markdown files are meaningful and not placeholders.",
+    ".geoaware/constitution.json is valid JSON.",
+    "Founder attribution is included respectfully.",
+    "No app behavior changes.",
+    "No dependencies added.",
+    "Build remains unaffected."
+  ]
+}
