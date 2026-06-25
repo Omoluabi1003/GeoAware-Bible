@@ -16,7 +16,14 @@ export default function Home() {
   const [mode, setMode] = useState('geo');
   const [arrivalStep, setArrivalStep] = useState('ready');
   const profile = languageProfiles[countryCode] || languageProfiles.US;
-  const translation = useMemo(() => getTranslation(profile.translationId), [profile]);
+  const activeTranslation = useMemo(() => (
+    mode === 'fixed' ? getTranslation('web') : getTranslation(profile.translationId)
+  ), [mode, profile.translationId]);
+  const alternateLanguages = useMemo(() => (
+    [...new Set(profile.alternates || [])]
+      .filter((language) => language !== profile.primaryLanguage)
+      .slice(0, 2)
+  ), [profile.alternates, profile.primaryLanguage]);
   const countries = Object.entries(languageProfiles);
   const locationLabel = [profile.city, profile.state, profile.country].filter(Boolean).join(', ') || profile.country || 'Location available';
   const earthPosition = {
@@ -108,19 +115,19 @@ export default function Home() {
         <article className={`readerPanel glassPanel ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
           <div className="panelHeader">
             <p className="eyebrow"><Languages size={15} /> Scripture Reader</p>
-            <span>{mode === 'fixed' ? 'English' : translation.language}</span>
+            <span>{activeTranslation.language}</span>
           </div>
           <div className="verseBox">
-            <small>{translation.reference}</small>
-            <p>{mode === 'fixed' ? getTranslation('web').text : translation.text}</p>
+            <small>{activeTranslation.reference}</small>
+            <p>{activeTranslation.text}</p>
           </div>
           <div className="readerMeta">
-            <strong>{translation.name}</strong>
-            <span>{translation.license}</span>
+            <strong>{activeTranslation.name}</strong>
+            <span>{activeTranslation.license}</span>
           </div>
           <div className="languageChips" aria-label="Available local languages">
             <span>{profile.primaryLanguage}</span>
-            {(profile.alternates || []).slice(0, 2).map((language) => <span key={language}>{language}</span>)}
+            {alternateLanguages.map((language) => <span key={language}>{language}</span>)}
           </div>
         </article>
 
