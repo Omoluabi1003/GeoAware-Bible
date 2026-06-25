@@ -5,6 +5,7 @@ import { BookOpen, Globe2, Languages, MapPin, Plane } from 'lucide-react';
 import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
 import ProjectEarthRenderer from '../src/renderers/project-earth/ProjectEarthRenderer.jsx';
+import { rotationForGeoCoordinate } from '../src/renderers/project-earth/geoCoordinateEngine.js';
 
 const journeyStats = [
   ['Countries', '6'],
@@ -25,11 +26,8 @@ function easeOutCubic(progress) {
 function resolveEarthCamera(profile) {
   const coordinates = profile.coordinates || languageProfiles.US.coordinates;
   return {
-    focus: { x: coordinates.x, y: coordinates.y },
-    rotation: {
-      x: (50 - coordinates.y) * 0.16,
-      y: (coordinates.x - 50) * 0.2
-    }
+    coordinates,
+    rotation: rotationForGeoCoordinate(coordinates)
   };
 }
 
@@ -38,9 +36,9 @@ function interpolateCamera(from, to, progress) {
   const lerp = (start, end) => start + (end - start) * eased;
 
   return {
-    focus: {
-      x: lerp(from.focus.x, to.focus.x),
-      y: lerp(from.focus.y, to.focus.y)
+    coordinates: {
+      latitude: lerp(from.coordinates.latitude, to.coordinates.latitude),
+      longitude: lerp(from.coordinates.longitude, to.coordinates.longitude)
     },
     rotation: {
       x: lerp(from.rotation.x, to.rotation.x),
@@ -127,7 +125,7 @@ export default function Home() {
         </div>
 
         <ProjectEarthRenderer
-          focus={earthCamera.focus}
+          coordinates={earthCamera.coordinates}
           rotation={earthCamera.rotation}
           signalLabel={`${profile.country} signal`}
         />

@@ -7,12 +7,12 @@ import { RealEarthRenderer } from './RealEarthRenderer.jsx';
 /**
  * Renderer boundary for Project Earth.
  *
- * The app passes only visual intent: focus, rotation, and signalLabel. This
+ * The app passes only visual intent: coordinate, rotation, and signalLabel. This
  * boundary can attempt the real renderer while keeping the previous CSS globe as
  * a safe fallback for browsers or devices without WebGL support.
  */
 export function EarthRenderer({
-  focus = { x: 50, y: 50 },
+  coordinates = { latitude: 0, longitude: 0 },
   rotation = { x: 0, y: 0 },
   signalLabel = 'Earth signal'
 }) {
@@ -20,12 +20,12 @@ export function EarthRenderer({
   const handleUnavailable = useCallback(() => setUseFallback(true), []);
 
   if (useFallback) {
-    return <CssEarthRenderer signalLabel={signalLabel} />;
+    return <CssEarthRenderer coordinates={coordinates} rotation={rotation} signalLabel={signalLabel} />;
   }
 
   return (
     <RealEarthRenderer
-      focus={focus}
+      coordinates={coordinates}
       rotation={rotation}
       signalLabel={signalLabel}
       onUnavailable={handleUnavailable}
