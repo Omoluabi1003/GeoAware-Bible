@@ -47,6 +47,9 @@ export default function Home() {
           <div className="orbit orbitOne" />
           <div className="orbit orbitTwo" />
           <div className="earth">
+            <div className="atmosphere" />
+            <div className="cloudBand" />
+            <div className="terminator" />
             <div className="earthShade" />
             <div className="latitude latOne" />
             <div className="latitude latTwo" />
@@ -56,7 +59,7 @@ export default function Home() {
             <div className="land landOne" />
             <div className="land landTwo" />
             <div className="land landThree" />
-            <div className="beacon" style={{ left: `${profile.coordinates.x}%`, top: `${profile.coordinates.y}%` }}>
+            <div className="beacon" style={{ left: `${profile.coordinates.x}%`, top: `${profile.coordinates.y}%` }} aria-label={`${profile.country} signal`}>
               <span />
             </div>
           </div>
