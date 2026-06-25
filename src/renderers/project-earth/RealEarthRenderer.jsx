@@ -5,9 +5,15 @@ import { NATURAL_EARTH_LAND_RINGS } from './data/naturalEarthLand.js';
 
 const TWO_PI = Math.PI * 2;
 const HORIZON_EPSILON = -0.08;
-const EARTH_ROTATION_DEGREES_PER_SECOND = 0.002;
-const CLOUD_DRIFT_DEGREES_PER_SECOND = 0.006;
+const EARTH_ROTATION_DEGREES_PER_SECOND = 0.25;
+const CLOUD_DRIFT_DEGREES_PER_SECOND = 0.012;
 const LIGHT_DRIFT_PERIOD_MS = 1200000;
+const DRAG_DEGREES_PER_PIXEL = 0.18;
+const INERTIA_DECAY_PER_FRAME = 0.94;
+const MIN_INERTIA_DEGREES_PER_FRAME = 0.006;
+const AUTO_RESUME_DELAY_MS = 2200;
+const AUTO_RESUME_RAMP_MS = 7000;
+const HORIZONTAL_DRAG_THRESHOLD_PX = 6;
 
 export function getEarthMesh() {
   return {
@@ -191,8 +197,23 @@ function useReducedMotion() {
 }
 
 export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal', onUnavailable }) {
+  const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
+  const interactionRef = useRef({
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastTime: 0,
+    dragOffset: 0,
+    velocity: 0,
+    isDragging: false,
+    isHorizontalDrag: false,
+    releasedAt: 0,
+    autoTurn: 0,
+    lastFrameAt: 0
+  });
   const reducedMotion = useReducedMotion();
   const baseRotation = useMemo(() => ({ x: rotation.x, y: rotation.y }), [rotation.x, rotation.y]);
 
@@ -203,30 +224,115 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
   }, [onUnavailable]);
 
   useEffect(() => {
+    const globe = containerRef.current;
+    if (!globe) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!event.isPrimary) return;
+
+      const interaction = interactionRef.current;
+      interaction.pointerId = event.pointerId;
+      interaction.startX = event.clientX;
+      interaction.startY = event.clientY;
+      interaction.lastX = event.clientX;
+      interaction.lastTime = performance.now();
+      interaction.velocity = 0;
+      interaction.isDragging = true;
+      interaction.isHorizontalDrag = false;
+      globe.setPointerCapture?.(event.pointerId);
+    };
+
+    const handlePointerMove = (event) => {
+      const interaction = interactionRef.current;
+      if (!interaction.isDragging || interaction.pointerId !== event.pointerId) return;
+
+      const dxFromStart = event.clientX - interaction.startX;
+      const dyFromStart = event.clientY - interaction.startY;
+      if (!interaction.isHorizontalDrag && Math.abs(dxFromStart) > HORIZONTAL_DRAG_THRESHOLD_PX && Math.abs(dxFromStart) > Math.abs(dyFromStart)) {
+        interaction.isHorizontalDrag = true;
+      }
+
+      if (!interaction.isHorizontalDrag) return;
+
+      event.preventDefault();
+      const now = performance.now();
+      const dx = event.clientX - interaction.lastX;
+      const dt = Math.max(16, now - interaction.lastTime);
+      const turn = dx * DRAG_DEGREES_PER_PIXEL;
+      interaction.dragOffset += turn;
+      interaction.velocity = (turn / dt) * 16.67;
+      interaction.lastX = event.clientX;
+      interaction.lastTime = now;
+      interaction.releasedAt = now;
+    };
+
+    const endPointerDrag = (event) => {
+      const interaction = interactionRef.current;
+      if (interaction.pointerId !== event.pointerId) return;
+
+      interaction.isDragging = false;
+      interaction.isHorizontalDrag = false;
+      interaction.pointerId = null;
+      interaction.releasedAt = performance.now();
+      globe.releasePointerCapture?.(event.pointerId);
+    };
+
+    globe.addEventListener('pointerdown', handlePointerDown);
+    globe.addEventListener('pointermove', handlePointerMove);
+    globe.addEventListener('pointerup', endPointerDrag);
+    globe.addEventListener('pointercancel', endPointerDrag);
+
+    return () => {
+      globe.removeEventListener('pointerdown', handlePointerDown);
+      globe.removeEventListener('pointermove', handlePointerMove);
+      globe.removeEventListener('pointerup', endPointerDrag);
+      globe.removeEventListener('pointercancel', endPointerDrag);
+    };
+  }, []);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
 
     const startedAt = performance.now();
     const stillMotion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0 };
 
-    const renderStill = () => drawEarth(canvas, focus, baseRotation, stillMotion);
+    const renderStill = () => drawEarth(canvas, focus, { ...baseRotation, y: baseRotation.y + interactionRef.current.dragOffset }, stillMotion);
     const renderFrame = (now) => {
+      const interaction = interactionRef.current;
+      const timeSinceRelease = now - interaction.releasedAt;
+      const resumeProgress = interaction.releasedAt === 0
+        ? 1
+        : Math.min(1, Math.max(0, (timeSinceRelease - AUTO_RESUME_DELAY_MS) / AUTO_RESUME_RAMP_MS));
+      const autoMultiplier = interaction.isDragging ? 0 : resumeProgress;
+
+      const frameSeconds = interaction.lastFrameAt === 0 ? 0 : (now - interaction.lastFrameAt) / 1000;
+      interaction.lastFrameAt = now;
+
+      if (!interaction.isDragging && Math.abs(interaction.velocity) > MIN_INERTIA_DEGREES_PER_FRAME && !reducedMotion) {
+        interaction.dragOffset += interaction.velocity;
+        interaction.velocity *= INERTIA_DECAY_PER_FRAME;
+      }
+
+      if (!reducedMotion) {
+        interaction.autoTurn += frameSeconds * EARTH_ROTATION_DEGREES_PER_SECOND * autoMultiplier;
+      }
+
+      const earthTurn = reducedMotion ? 0 : interaction.autoTurn;
       const elapsedSeconds = (now - startedAt) / 1000;
-      const earthTurn = reducedMotion ? 0 : elapsedSeconds * EARTH_ROTATION_DEGREES_PER_SECOND;
       const cloudTurn = reducedMotion ? 0 : elapsedSeconds * CLOUD_DRIFT_DEGREES_PER_SECOND;
       const lightPhase = reducedMotion ? 0 : ((now - startedAt) / LIGHT_DRIFT_PERIOD_MS) * TWO_PI;
 
-      drawEarth(canvas, focus, { ...baseRotation, y: baseRotation.y + earthTurn }, { earthTurn, cloudTurn, lightPhase });
+      drawEarth(canvas, focus, { ...baseRotation, y: baseRotation.y + earthTurn + interaction.dragOffset }, { earthTurn, cloudTurn, lightPhase });
       animationRef.current = window.requestAnimationFrame(renderFrame);
     };
 
-    if (reducedMotion) {
+    animationRef.current = window.requestAnimationFrame(reducedMotion ? function renderReducedFrame() {
       renderStill();
-    } else {
-      animationRef.current = window.requestAnimationFrame(renderFrame);
-    }
+      animationRef.current = window.requestAnimationFrame(renderReducedFrame);
+    } : renderFrame);
 
-    const resizeObserver = new ResizeObserver(reducedMotion ? renderStill : () => drawEarth(canvas, focus, baseRotation, stillMotion));
+    const resizeObserver = new ResizeObserver(renderStill);
     resizeObserver.observe(canvas);
     return () => {
       resizeObserver.disconnect();
@@ -235,7 +341,7 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
   }, [focus, baseRotation, reducedMotion]);
 
   return (
-    <div className="earth realEarth" aria-live="off" data-earth-renderer="canvas-real">
+    <div ref={containerRef} className="earth realEarth" aria-live="off" data-earth-renderer="canvas-real">
       <canvas ref={canvasRef} className="realEarthCanvas" aria-hidden="true" />
       <div className="realEarthAtmosphere" aria-hidden="true" />
       <div className="beacon" aria-label={signalLabel}>
