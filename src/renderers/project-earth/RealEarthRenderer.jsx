@@ -6,6 +6,8 @@ import { clamp, projectGeoCoordinate } from './geoCoordinateEngine.js';
 
 const TWO_PI = Math.PI * 2;
 const HORIZON_EPSILON = -0.015;
+const LABEL_OFFSET_PERCENT = 4.2;
+const LABEL_EDGE_PADDING_PERCENT = 7.5;
 const EARTH_ROTATION_DEGREES_PER_SECOND = 0.25;
 const CLOUD_DRIFT_DEGREES_PER_SECOND = 0.012;
 const LIGHT_DRIFT_PERIOD_MS = 1200000;
@@ -103,17 +105,13 @@ function drawProjectedPath(ctx, points, { close = false } = {}) {
 
 function drawRing(ctx, ring, radius, center, rotation, { fill = true, stroke = true } = {}) {
   const projectedPoints = ring.map((coordinate) => projectPoint(coordinate, radius, center, rotation));
-  const horizonZ = radius * HORIZON_EPSILON;
-  const isFullyVisible = projectedPoints.every((point) => point.z >= horizonZ);
 
-  if (fill && isFullyVisible && projectedPoints.length >= 3) {
+  if (fill && projectedPoints.length >= 3) {
     drawProjectedPath(ctx, projectedPoints, { close: true });
     ctx.fill();
-    if (stroke) ctx.stroke();
-    return;
   }
 
-  if (fill && !stroke) return;
+  if (!stroke) return;
 
   const segments = getVisibleRingSegments(ring, radius, center, rotation);
   segments.forEach((segment) => {
@@ -160,23 +158,6 @@ function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloud
   ctx.fillStyle = ocean;
   ctx.fillRect(0, 0, size, size);
 
-  ctx.globalCompositeOperation = 'screen';
-  ctx.globalAlpha = 0.08;
-  ctx.strokeStyle = '#bdeeff';
-  ctx.lineWidth = Math.max(2, size * 0.006);
-  mesh.rings.forEach((ring) => drawRing(ctx, ring, radius * 1.002, center, rotation, { fill: false, stroke: true }));
-  ctx.globalCompositeOperation = 'source-over';
-
-  ctx.globalAlpha = 0.18;
-  ctx.strokeStyle = 'rgba(218,241,255,.24)';
-  ctx.lineWidth = Math.max(0.8, size * 0.0015);
-  [-60, -30, 0, 30, 60].forEach((latitude) => {
-    drawRing(ctx, createLatitudeRing(latitude), radius, center, rotation, { fill: false, stroke: true });
-  });
-  [-120, -60, 0, 60, 120, 180].forEach((longitude) => {
-    drawRing(ctx, createLongitudeRing(longitude), radius, center, rotation, { fill: false, stroke: true });
-  });
-
   ctx.globalAlpha = 1;
   const land = ctx.createLinearGradient(size * 0.24, size * 0.1, size * 0.76, size * 0.9);
   land.addColorStop(0, '#7f8d59');
@@ -187,6 +168,24 @@ function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloud
   ctx.strokeStyle = 'rgba(239, 226, 185, .38)';
   ctx.lineWidth = Math.max(0.75, size * 0.0016);
   mesh.rings.forEach((ring) => drawRing(ctx, ring, radius, center, rotation));
+
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 0.18;
+  ctx.strokeStyle = 'rgba(218,241,255,.24)';
+  ctx.lineWidth = Math.max(0.8, size * 0.0015);
+  [-60, -30, 0, 30, 60].forEach((latitude) => {
+    drawRing(ctx, createLatitudeRing(latitude), radius, center, rotation, { fill: false, stroke: true });
+  });
+  [-120, -60, 0, 60, 120, 180].forEach((longitude) => {
+    drawRing(ctx, createLongitudeRing(longitude), radius, center, rotation, { fill: false, stroke: true });
+  });
+
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = 0.1;
+  ctx.strokeStyle = '#bdeeff';
+  ctx.lineWidth = Math.max(2, size * 0.006);
+  mesh.rings.forEach((ring) => drawRing(ctx, ring, radius * 1.002, center, rotation, { fill: false, stroke: true }));
+  ctx.globalCompositeOperation = 'source-over';
 
   ctx.globalCompositeOperation = 'soft-light';
   ctx.globalAlpha = 0.22;
@@ -277,7 +276,7 @@ export function RealEarthRenderer({
     lastFrameAt: 0
   });
   const reducedMotion = useReducedMotion();
-  const [projectedBeacon, setProjectedBeacon] = useState({ x: 50, y: 50, visible: true });
+  const [projectedBeacon, setProjectedBeacon] = useState({ x: 50, y: 50, visible: true, fade: 1 });
   const baseRotation = useMemo(
     () => ({
       x: clamp(rotation.x, MIN_PITCH_DEGREES, MAX_PITCH_DEGREES),
@@ -390,7 +389,9 @@ export function RealEarthRenderer({
       const rect = canvas.getBoundingClientRect();
       const size = Math.max(1, Math.round(rect.width));
       const beacon = projectGeoCoordinate(coordinates, size * 0.49, size / 2, nextRotation);
-      setProjectedBeacon({ x: beacon.percent.x, y: beacon.percent.y, visible: beacon.visible });
+      const distanceFromCenter = Math.hypot(beacon.percent.x - 50, beacon.percent.y - 50);
+      const limbFade = clamp((49 - distanceFromCenter) / 9, 0, 1);
+      setProjectedBeacon({ x: beacon.percent.x, y: beacon.percent.y, visible: beacon.visible, fade: limbFade });
     };
     const renderStill = () => {
       const nextRotation = getInteractionRotation();
@@ -453,8 +454,17 @@ export function RealEarthRenderer({
     };
   }, [coordinates, baseRotation, reducedMotion, isTransitioning]);
 
+  const labelXDirection = projectedBeacon.x < 50 ? 1 : -1;
+  const labelYDirection = projectedBeacon.y < 50 ? 1 : -1;
+  const labelX = clamp(projectedBeacon.x + labelXDirection * LABEL_OFFSET_PERCENT, LABEL_EDGE_PADDING_PERCENT, 100 - LABEL_EDGE_PADDING_PERCENT);
+  const labelY = clamp(projectedBeacon.y + labelYDirection * (LABEL_OFFSET_PERCENT * 0.65), LABEL_EDGE_PADDING_PERCENT, 100 - LABEL_EDGE_PADDING_PERCENT);
+  const labelOpacity = projectedBeacon.visible ? Math.min(0.82, Math.max(0, projectedBeacon.fade ?? 1) * 0.82) : 0;
   const beaconStyle = { '--beacon-x': `${projectedBeacon.x}%`, '--beacon-y': `${projectedBeacon.y}%`, opacity: projectedBeacon.visible ? 1 : 0.18 };
-  const labelStyle = { '--beacon-x': `${projectedBeacon.x}%`, '--beacon-y': `${projectedBeacon.y}%` };
+  const labelStyle = {
+    '--label-x': `${labelX}%`,
+    '--label-y': `${labelY}%`,
+    opacity: labelOpacity
+  };
 
   return (
     <div ref={containerRef} className="earth realEarth" aria-live="off" data-earth-renderer="canvas-real">
