@@ -8,7 +8,7 @@ export const languageProfiles = {
     languageCode: 'en',
     translationId: 'web',
     alternates: ['Spanish', 'Haitian Creole'],
-    coordinates: { x: 31, y: 42 },
+    coordinates: { latitude: 37.0902, longitude: -95.7129 },
     flag: '🇺🇸',
     prayer: 'May peace, wisdom, and renewal rest upon every home and city in this land.'
   },
@@ -21,7 +21,7 @@ export const languageProfiles = {
     languageCode: 'en',
     translationId: 'web',
     alternates: ['Yoruba', 'Hausa', 'Igbo', 'Pidgin English'],
-    coordinates: { x: 52, y: 50 },
+    coordinates: { latitude: 9.082, longitude: 8.6753 },
     flag: '🇳🇬',
     prayer: 'May God bless Nigeria with courage, healing, justice, and light for every generation.'
   },
@@ -34,7 +34,7 @@ export const languageProfiles = {
     languageCode: 'pt',
     translationId: 'sample-pt',
     alternates: ['English'],
-    coordinates: { x: 39, y: 66 },
+    coordinates: { latitude: -14.235, longitude: -51.9253 },
     flag: '🇧🇷',
     prayer: 'May joy, mercy, and hope flow across Brazil like rivers of grace.'
   },
@@ -47,7 +47,7 @@ export const languageProfiles = {
     languageCode: 'sw',
     translationId: 'sample-sw',
     alternates: ['English'],
-    coordinates: { x: 59, y: 56 },
+    coordinates: { latitude: -0.0236, longitude: 37.9062 },
     flag: '🇰🇪',
     prayer: 'May the people of Kenya walk in peace, strength, and divine direction.'
   },
@@ -59,7 +59,7 @@ export const languageProfiles = {
     languageCode: 'fr',
     translationId: 'sample-fr',
     alternates: ['English'],
-    coordinates: { x: 48, y: 35 },
+    coordinates: { latitude: 46.2276, longitude: 2.2137 },
     flag: '🇫🇷',
     prayer: 'May faith, compassion, and truth shine across France with renewed clarity.'
   },
@@ -71,7 +71,7 @@ export const languageProfiles = {
     languageCode: 'ja',
     translationId: 'sample-ja',
     alternates: ['English'],
-    coordinates: { x: 79, y: 43 },
+    coordinates: { latitude: 36.2048, longitude: 138.2529 },
     flag: '🇯🇵',
     prayer: 'May quiet strength, peace, and the light of truth rest upon Japan.'
   }

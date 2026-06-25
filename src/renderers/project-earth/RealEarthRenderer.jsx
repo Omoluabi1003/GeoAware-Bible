@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NATURAL_EARTH_LAND_RINGS } from './data/naturalEarthLand.js';
+import { clamp, projectGeoCoordinate } from './geoCoordinateEngine.js';
 
 const TWO_PI = Math.PI * 2;
 const HORIZON_EPSILON = -0.015;
@@ -15,10 +16,6 @@ const AUTO_RESUME_DELAY_MS = 2200;
 const AUTO_RESUME_RAMP_MS = 7000;
 const MIN_PITCH_DEGREES = -62;
 const MAX_PITCH_DEGREES = 62;
-
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
 
 export function getEarthMesh() {
   return {
@@ -113,7 +110,7 @@ function drawRing(ctx, ring, radius, center, rotation, { fill = true, stroke = t
   });
 }
 
-function drawEarth(canvas, focus, rotation, motion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0 }) {
+function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0 }) {
   const rect = canvas.getBoundingClientRect();
   const size = Math.max(1, Math.round(rect.width));
   const scale = window.devicePixelRatio || 1;
@@ -206,13 +203,14 @@ function drawEarth(canvas, focus, rotation, motion = { earthTurn: 0, cloudTurn: 
   ctx.fillStyle = shade;
   ctx.fillRect(0, 0, size, size);
 
-  const beaconX = (focus.x / 100) * size;
-  const beaconY = (focus.y / 100) * size;
-  ctx.globalAlpha = 0.28;
-  ctx.fillStyle = '#f7d77a';
-  ctx.beginPath();
-  ctx.arc(beaconX, beaconY, Math.max(6, size * 0.018), 0, TWO_PI);
-  ctx.fill();
+  const beacon = projectGeoCoordinate(coordinates, radius, center, rotation);
+  if (beacon.visible) {
+    ctx.globalAlpha = 0.28;
+    ctx.fillStyle = '#f7d77a';
+    ctx.beginPath();
+    ctx.arc(beacon.x, beacon.y, Math.max(6, size * 0.018), 0, TWO_PI);
+    ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -232,7 +230,7 @@ function useReducedMotion() {
   return reducedMotion;
 }
 
-export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal', onUnavailable }) {
+export function RealEarthRenderer({ coordinates, rotation, signalLabel = 'Earth signal', onUnavailable }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
@@ -252,6 +250,7 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
     lastFrameAt: 0
   });
   const reducedMotion = useReducedMotion();
+  const [projectedBeacon, setProjectedBeacon] = useState({ x: 50, y: 50, visible: true });
   const baseRotation = useMemo(
     () => ({
       x: clamp(rotation.x, MIN_PITCH_DEGREES, MAX_PITCH_DEGREES),
@@ -347,7 +346,17 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
       x: clamp(baseRotation.x + interactionRef.current.rotationOffset.x, MIN_PITCH_DEGREES, MAX_PITCH_DEGREES),
       y: baseRotation.y + earthTurn + interactionRef.current.rotationOffset.y
     });
-    const renderStill = () => drawEarth(canvas, focus, getInteractionRotation(), stillMotion);
+    const updateBeacon = (nextRotation) => {
+      const rect = canvas.getBoundingClientRect();
+      const size = Math.max(1, Math.round(rect.width));
+      const beacon = projectGeoCoordinate(coordinates, size * 0.49, size / 2, nextRotation);
+      setProjectedBeacon({ x: beacon.percent.x, y: beacon.percent.y, visible: beacon.visible });
+    };
+    const renderStill = () => {
+      const nextRotation = getInteractionRotation();
+      drawEarth(canvas, coordinates, nextRotation, stillMotion);
+      updateBeacon(nextRotation);
+    };
     const renderFrame = (now) => {
       const interaction = interactionRef.current;
       const timeSinceRelease = now - interaction.releasedAt;
@@ -385,7 +394,9 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
       const cloudTurn = reducedMotion ? 0 : elapsedSeconds * CLOUD_DRIFT_DEGREES_PER_SECOND;
       const lightPhase = reducedMotion ? 0 : ((now - startedAt) / LIGHT_DRIFT_PERIOD_MS) * TWO_PI;
 
-      drawEarth(canvas, focus, getInteractionRotation(earthTurn), { earthTurn, cloudTurn, lightPhase });
+      const nextRotation = getInteractionRotation(earthTurn);
+      drawEarth(canvas, coordinates, nextRotation, { earthTurn, cloudTurn, lightPhase });
+      updateBeacon(nextRotation);
       animationRef.current = window.requestAnimationFrame(renderFrame);
     };
 
@@ -400,13 +411,15 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
       resizeObserver.disconnect();
       if (animationRef.current) window.cancelAnimationFrame(animationRef.current);
     };
-  }, [focus, baseRotation, reducedMotion]);
+  }, [coordinates, baseRotation, reducedMotion]);
+
+  const beaconStyle = { '--beacon-x': `${projectedBeacon.x}%`, '--beacon-y': `${projectedBeacon.y}%`, opacity: projectedBeacon.visible ? 1 : 0.18 };
 
   return (
     <div ref={containerRef} className="earth realEarth" aria-live="off" data-earth-renderer="canvas-real">
       <canvas ref={canvasRef} className="realEarthCanvas" aria-hidden="true" />
       <div className="realEarthAtmosphere" aria-hidden="true" />
-      <div className="beacon" aria-label={signalLabel}>
+      <div className="beacon" style={beaconStyle} aria-label={signalLabel}>
         <span aria-hidden="true" />
       </div>
     </div>
