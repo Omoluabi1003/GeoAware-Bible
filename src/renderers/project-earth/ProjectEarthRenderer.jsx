@@ -30,7 +30,7 @@ export default function ProjectEarthRenderer({
         <div className="orbit orbitOne" aria-hidden="true" />
         <div className="orbit orbitTwo" aria-hidden="true" />
         <div className="earthWrapper">
-          <EarthRenderer signalLabel={signalLabel} />
+          <EarthRenderer focus={focus} rotation={rotation} signalLabel={signalLabel} />
         </div>
       </div>
     </div>
