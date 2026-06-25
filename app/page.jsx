@@ -55,13 +55,11 @@ export default function Home() {
     <main className="pageShell" style={earthPosition}>
       <section className="topNav">
         <div className="brand"><span className="brandMark">✦</span> GeoAware Bible</div>
-        <div className="navPill">Open-License Scripture Engine</div>
       </section>
 
       <section className="heroGrid">
         <div className="heroCopy">
           <h1>God's Word. Wherever you are.</h1>
-          <p className="lede">Scripture opens in the language of this place.</p>
           <div className="modeSwitch" aria-label="Geo mode selector">
             <button className={mode === 'geo' ? 'active' : ''} onClick={() => setMode('geo')}><MapPin size={16} /> Follow My Location</button>
             <button className={mode === 'fixed' ? 'active' : ''} onClick={() => setMode('fixed')}><BookOpen size={16} /> Stay In English</button>
@@ -120,6 +118,7 @@ export default function Home() {
           <div className="readerMeta">
             <strong>{activeTranslation.name}</strong>
             <span>{activeTranslation.license}</span>
+            <span className="metadataBadge">Open-License Scripture Engine</span>
           </div>
           <div className="languageChips" aria-label="Available local languages">
             <span>{profile.primaryLanguage}</span>
