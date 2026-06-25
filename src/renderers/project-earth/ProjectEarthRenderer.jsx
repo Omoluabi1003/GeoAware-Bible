@@ -1,5 +1,7 @@
 'use client';
 
+import { EarthRenderer } from './EarthRenderer.jsx';
+
 /**
  * Project Earth renderer foundation.
  *
@@ -28,20 +30,7 @@ export default function ProjectEarthRenderer({
         <div className="orbit orbitOne" aria-hidden="true" />
         <div className="orbit orbitTwo" aria-hidden="true" />
         <div className="earthWrapper">
-          <div className="earth" aria-live="off">
-            <div className="atmosphere" aria-hidden="true" />
-            <div className="cloudBand" aria-hidden="true" />
-            <div className="terminator" aria-hidden="true" />
-            <div className="earthShade" aria-hidden="true" />
-            <div className="latitude latOne" aria-hidden="true" />
-            <div className="latitude latTwo" aria-hidden="true" />
-            <div className="latitude latThree" aria-hidden="true" />
-            <div className="longitude lonOne" aria-hidden="true" />
-            <div className="longitude lonTwo" aria-hidden="true" />
-            <div className="beacon" aria-label={signalLabel}>
-              <span aria-hidden="true" />
-            </div>
-          </div>
+          <EarthRenderer signalLabel={signalLabel} />
         </div>
       </div>
     </div>
