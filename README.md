@@ -4,11 +4,19 @@ GeoAware Bible™ automatically detects your location and presents Scripture in 
 
 Founded by **Paul Iyogun**, Founder and Chief Architect of ETL GIS Consulting LLC, GeoAware Bible™ is guided by a Scripture-first vision: to use code as a road that helps pilgrims walk through Scripture.
 
+## GeoAware OS Governance
+
+This repository follows **GeoAware OS v1.0.0**, a design and engineering philosophy founded by Paul Iyogun for calm, geography-first digital experiences where technology quietly guides discovery.
+
+Source: https://github.com/Omoluabi1003/GeoAware-OS
+
 ## Current Milestone
 
 **Project Genesis is complete.** The project foundation documents, founding covenant, product constitution, mission language, and architectural guardrails are now part of the repository.
 
-**Project Exodus is now the active milestone.** This phase focuses on a photorealistic Living Earth visual layer while preserving Scripture reader behavior, country switching, GeoPrayer, Scripture Passport foundations, mobile responsiveness, and the principle that Scripture remains the destination.
+**Project Exodus is complete.** The Living Earth identity, performance cleanup, mobile refinement, and GeoAware visual direction are now established.
+
+**Project Emmaus is next.** This phase focuses on the AI Guide and contextual Scripture journey while preserving Scripture as the primary experience.
 
 ## Product Promise
 
