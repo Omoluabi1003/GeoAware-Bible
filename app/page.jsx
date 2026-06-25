@@ -63,7 +63,7 @@ export default function Home() {
           <div className="badge"><Sparkles size={16} /> Living Earth Scripture Experience</div>
           <h1>God's Word. Wherever you are.</h1>
           <p className="lede">
-            The world is the interface: arrive, recognize the local language, and open Scripture with calm clarity.
+            Arrive anywhere and open Scripture in the local language.
           </p>
           <div className="modeSwitch" aria-label="Geo mode selector">
             <button className={mode === 'geo' ? 'active' : ''} onClick={() => setMode('geo')}><MapPin size={16} /> Follow My Location</button>
