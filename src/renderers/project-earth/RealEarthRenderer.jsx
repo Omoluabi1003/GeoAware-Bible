@@ -250,7 +250,14 @@ function useReducedMotion() {
   return reducedMotion;
 }
 
-export function RealEarthRenderer({ coordinates, rotation, signalLabel = 'Earth signal', onUnavailable, isTransitioning = false }) {
+export function RealEarthRenderer({
+  coordinates,
+  rotation,
+  signalLabel = 'Earth signal',
+  activeLocationLabel = '',
+  onUnavailable,
+  isTransitioning = false
+}) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
@@ -447,6 +454,7 @@ export function RealEarthRenderer({ coordinates, rotation, signalLabel = 'Earth 
   }, [coordinates, baseRotation, reducedMotion, isTransitioning]);
 
   const beaconStyle = { '--beacon-x': `${projectedBeacon.x}%`, '--beacon-y': `${projectedBeacon.y}%`, opacity: projectedBeacon.visible ? 1 : 0.18 };
+  const labelStyle = { '--beacon-x': `${projectedBeacon.x}%`, '--beacon-y': `${projectedBeacon.y}%` };
 
   return (
     <div ref={containerRef} className="earth realEarth" aria-live="off" data-earth-renderer="canvas-real">
@@ -455,6 +463,11 @@ export function RealEarthRenderer({ coordinates, rotation, signalLabel = 'Earth 
       <div className="beacon" style={beaconStyle} aria-label={signalLabel}>
         <span aria-hidden="true" />
       </div>
+      {activeLocationLabel ? (
+        <div className="activeLocationLabel" style={labelStyle} aria-hidden={!projectedBeacon.visible} data-visible={projectedBeacon.visible}>
+          {activeLocationLabel}
+        </div>
+      ) : null}
     </div>
   );
 }
