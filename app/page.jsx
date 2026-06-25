@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpen, Globe2, Languages, MapPin, Plane, Sparkles } from 'lucide-react';
+import { BookOpen, Globe2, Languages, MapPin, Plane } from 'lucide-react';
 import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
 
@@ -25,7 +25,7 @@ export default function Home() {
       .slice(0, 2)
   ), [profile.alternates, profile.primaryLanguage]);
   const countries = Object.entries(languageProfiles);
-  const locationLabel = [profile.city, profile.state, profile.country].filter(Boolean).join(', ') || profile.country || 'Location available';
+  const locationLabel = [profile.city, profile.state || profile.country].filter(Boolean).join(', ') || profile.country || 'Location available';
   const earthPosition = {
     '--focus-x': `${profile.coordinates.x}%`,
     '--focus-y': `${profile.coordinates.y}%`,
@@ -60,11 +60,8 @@ export default function Home() {
 
       <section className="heroGrid">
         <div className="heroCopy">
-          <div className="badge"><Sparkles size={16} /> Living Earth Scripture Experience</div>
           <h1>God's Word. Wherever you are.</h1>
-          <p className="lede">
-            Arrive anywhere and open Scripture in the local language.
-          </p>
+          <p className="lede">Scripture opens in the language of this place.</p>
           <div className="modeSwitch" aria-label="Geo mode selector">
             <button className={mode === 'geo' ? 'active' : ''} onClick={() => setMode('geo')}><MapPin size={16} /> Follow My Location</button>
             <button className={mode === 'fixed' ? 'active' : ''} onClick={() => setMode('fixed')}><BookOpen size={16} /> Stay In English</button>
@@ -94,9 +91,8 @@ export default function Home() {
             </div>
           </div>
           <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
-            <p>{arrivalStep === 'ready' ? 'Arrived' : 'Arriving'}</p>
             <h2><span aria-hidden="true">{profile.flag}</span> {locationLabel}</h2>
-            <small aria-live="polite" aria-atomic="true">{arrivalMessage}</small>
+            <small aria-live="polite" aria-atomic="true">{arrivalStep === 'ready' ? 'Scripture ready' : arrivalMessage}</small>
           </div>
         </div>
       </section>
