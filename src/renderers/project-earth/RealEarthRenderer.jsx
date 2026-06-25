@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { NATURAL_EARTH_LAND_RINGS } from './data/naturalEarthLand.js';
 
 const TWO_PI = Math.PI * 2;
 const HORIZON_EPSILON = -0.08;
+const EARTH_ROTATION_DEGREES_PER_SECOND = 0.002;
+const CLOUD_DRIFT_DEGREES_PER_SECOND = 0.006;
+const LIGHT_DRIFT_PERIOD_MS = 1200000;
 
 export function getEarthMesh() {
   return {
@@ -68,7 +71,7 @@ function drawRing(ctx, ring, radius, center, rotation, { fill = true, stroke = t
   if (stroke) ctx.stroke();
 }
 
-function drawEarth(canvas, focus, rotation) {
+function drawEarth(canvas, focus, rotation, motion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0 }) {
   const rect = canvas.getBoundingClientRect();
   const size = Math.max(1, Math.round(rect.width));
   const scale = window.devicePixelRatio || 1;
@@ -132,7 +135,29 @@ function drawEarth(canvas, focus, rotation) {
   mesh.rings.forEach((ring) => drawRing(ctx, ring.map(([lon, lat]) => [lon - 0.8, lat + 0.4]), radius, center, rotation, { stroke: false }));
   ctx.globalCompositeOperation = 'source-over';
 
-  const shade = ctx.createRadialGradient(size * 0.24, size * 0.18, size * 0.08, size * 0.72, size * 0.68, radius * 1.04);
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = 0.18;
+  ctx.strokeStyle = 'rgba(255, 255, 255, .42)';
+  ctx.lineWidth = Math.max(5, size * 0.012);
+  ctx.filter = `blur(${Math.max(2, size * 0.006)}px)`;
+  mesh.rings.forEach((ring) =>
+    drawRing(
+      ctx,
+      ring.map(([lon, lat]) => [lon + motion.cloudTurn, lat + Math.sin((lon + motion.cloudTurn) * Math.PI / 180) * 1.2]),
+      radius * 1.006,
+      center,
+      rotation,
+      { fill: false, stroke: true }
+    )
+  );
+  ctx.restore();
+
+  const lightX = size * (0.24 + Math.sin(motion.lightPhase) * 0.035);
+  const lightY = size * (0.18 + Math.cos(motion.lightPhase) * 0.02);
+  const shadeX = size * (0.72 + Math.sin(motion.lightPhase + Math.PI) * 0.025);
+  const shadeY = size * (0.68 + Math.cos(motion.lightPhase + Math.PI) * 0.018);
+  const shade = ctx.createRadialGradient(lightX, lightY, size * 0.08, shadeX, shadeY, radius * 1.04);
   shade.addColorStop(0, 'rgba(255, 244, 214, .16)');
   shade.addColorStop(0.48, 'rgba(0, 0, 0, 0)');
   shade.addColorStop(1, 'rgba(0, 0, 0, .72)');
@@ -149,8 +174,27 @@ function drawEarth(canvas, focus, rotation) {
   ctx.restore();
 }
 
+function useReducedMotion() {
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReducedMotion(query.matches);
+    update();
+    query.addEventListener?.('change', update);
+    return () => query.removeEventListener?.('change', update);
+  }, []);
+
+  return reducedMotion;
+}
+
 export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal', onUnavailable }) {
   const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const reducedMotion = useReducedMotion();
+  const baseRotation = useMemo(() => ({ x: rotation.x, y: rotation.y }), [rotation.x, rotation.y]);
 
   useEffect(() => {
     if (!hasWebGL()) {
@@ -162,13 +206,33 @@ export function RealEarthRenderer({ focus, rotation, signalLabel = 'Earth signal
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
 
-    const render = () => drawEarth(canvas, focus, rotation);
-    render();
+    const startedAt = performance.now();
+    const stillMotion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0 };
 
-    const resizeObserver = new ResizeObserver(render);
+    const renderStill = () => drawEarth(canvas, focus, baseRotation, stillMotion);
+    const renderFrame = (now) => {
+      const elapsedSeconds = (now - startedAt) / 1000;
+      const earthTurn = reducedMotion ? 0 : elapsedSeconds * EARTH_ROTATION_DEGREES_PER_SECOND;
+      const cloudTurn = reducedMotion ? 0 : elapsedSeconds * CLOUD_DRIFT_DEGREES_PER_SECOND;
+      const lightPhase = reducedMotion ? 0 : ((now - startedAt) / LIGHT_DRIFT_PERIOD_MS) * TWO_PI;
+
+      drawEarth(canvas, focus, { ...baseRotation, y: baseRotation.y + earthTurn }, { earthTurn, cloudTurn, lightPhase });
+      animationRef.current = window.requestAnimationFrame(renderFrame);
+    };
+
+    if (reducedMotion) {
+      renderStill();
+    } else {
+      animationRef.current = window.requestAnimationFrame(renderFrame);
+    }
+
+    const resizeObserver = new ResizeObserver(reducedMotion ? renderStill : () => drawEarth(canvas, focus, baseRotation, stillMotion));
     resizeObserver.observe(canvas);
-    return () => resizeObserver.disconnect();
-  }, [focus, rotation]);
+    return () => {
+      resizeObserver.disconnect();
+      if (animationRef.current) window.cancelAnimationFrame(animationRef.current);
+    };
+  }, [focus, baseRotation, reducedMotion]);
 
   return (
     <div className="earth realEarth" aria-live="off" data-earth-renderer="canvas-real">
