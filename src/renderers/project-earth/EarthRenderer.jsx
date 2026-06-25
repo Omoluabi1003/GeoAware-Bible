@@ -23,7 +23,7 @@ export function EarthRenderer({
   const handleUnavailable = useCallback(() => setUseFallback(true), []);
 
   if (useFallback) {
-    return <CssEarthRenderer coordinates={coordinates} rotation={rotation} signalLabel={signalLabel} activeLocationLabel={activeLocationLabel} activeCountryHighlight={activeCountryHighlight} />;
+    return <CssEarthRenderer coordinates={coordinates} rotation={rotation} signalLabel={signalLabel} activeLocationLabel={activeLocationLabel} activeCountryHighlight={activeCountryHighlight} isTransitioning={isTransitioning} />;
   }
 
   return (
