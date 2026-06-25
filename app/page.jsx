@@ -85,10 +85,11 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
-            <h2><span aria-hidden="true">{profile.flag}</span> {locationLabel}</h2>
-            <small aria-live="polite" aria-atomic="true">{arrivalStep === 'ready' ? 'Scripture ready' : arrivalMessage}</small>
-          </div>
+        </div>
+
+        <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
+          <h2><span aria-hidden="true">{profile.flag}</span> {locationLabel}</h2>
+          <small aria-live="polite" aria-atomic="true">{arrivalStep === 'ready' ? 'Scripture ready' : arrivalMessage}</small>
         </div>
       </section>
 
