@@ -2,9 +2,13 @@
 
 GeoAware Bible™ automatically detects your location and presents Scripture in the predominant local language using open-license Bible translations. Designed for travelers, missionaries, and global readers, it offers seamless multilingual access while allowing users to choose and save their preferred language.
 
-## Project Genesis
+Founded by **Paul Iyogun**, Founder and Chief Architect of ETL GIS Consulting LLC, GeoAware Bible™ is guided by a Scripture-first vision: to use code as a road that helps pilgrims walk through Scripture.
 
-The project foundation documents are now part of the repository.
+## Current Milestone
+
+**Project Genesis is complete.** The project foundation documents, founding covenant, product constitution, mission language, and architectural guardrails are now part of the repository.
+
+**Project Exodus is now the active milestone.** This phase focuses on a photorealistic Living Earth visual layer while preserving Scripture reader behavior, country switching, GeoPrayer, Scripture Passport foundations, mobile responsiveness, and the principle that Scripture remains the destination.
 
 ## Product Promise
 

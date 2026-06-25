@@ -1,6 +1,6 @@
 # GeoAware Bible Founding Covenant
 
-GeoAware Bible is founded by **Paul Iyogun**, Founder and Chief Architect, with a clear and lasting vision:
+GeoAware Bible is founded by **Paul Iyogun**, **Founder and Chief Architect** of ETL GIS Consulting LLC, with a clear and lasting vision:
 
 > To be remembered as the guy who used code to walk pilgrims through Scripture.
 
