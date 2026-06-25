@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpen, Compass, Globe2, Languages, MapPin, Plane, ShieldCheck, Sparkles } from 'lucide-react';
+import { BookOpen, Globe2, Languages, MapPin, Plane, Sparkles } from 'lucide-react';
 import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
 
@@ -56,16 +56,11 @@ export default function Home() {
           <div className="badge"><Sparkles size={16} /> Living Earth Scripture Experience</div>
           <h1>God's Word. Wherever you are.</h1>
           <p className="lede">
-            GeoAware Bible turns the world into the interface. Land in a place, discover the language of the people, and open Scripture with local context, dignity, and clarity.
+            The world is the interface: arrive, recognize the local language, and open Scripture with calm clarity.
           </p>
           <div className="modeSwitch" aria-label="Geo mode selector">
             <button className={mode === 'geo' ? 'active' : ''} onClick={() => setMode('geo')}><MapPin size={16} /> Follow My Location</button>
             <button className={mode === 'fixed' ? 'active' : ''} onClick={() => setMode('fixed')}><BookOpen size={16} /> Stay In English</button>
-          </div>
-          <div className={`statusStrip ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
-            <span>{arrivalStep === 'ready' ? 'Location confirmed' : 'Geo journey active'}</span>
-            <strong aria-live="polite" aria-atomic="true"><span aria-hidden="true">{profile.flag}</span> {locationLabel}</strong>
-            <span aria-live="polite" aria-atomic="true">{arrivalMessage}</span>
           </div>
         </div>
 
@@ -92,9 +87,9 @@ export default function Home() {
             </div>
           </div>
           <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
-            <p>{profile.region}</p>
-            <h2><span aria-hidden="true">{profile.flag}</span> {profile.country}</h2>
-            <small>{arrivalStep === 'ready' ? `${profile.country} · ${profile.primaryLanguage} recommended` : arrivalMessage}</small>
+            <p>{arrivalStep === 'ready' ? 'Arrived' : 'Arriving'}</p>
+            <h2><span aria-hidden="true">{profile.flag}</span> {locationLabel}</h2>
+            <small aria-live="polite" aria-atomic="true">{arrivalMessage}</small>
           </div>
         </div>
       </section>
@@ -104,7 +99,7 @@ export default function Home() {
           <button key={code} className={countryCode === code ? 'selected' : ''} onClick={() => setCountryCode(code)}>
             <span aria-hidden="true">{item.flag}</span>
             <strong>{item.country}</strong>
-            <small><span>{item.country}</span><em>·</em><span>{item.primaryLanguage}</span></small>
+            <small>{item.primaryLanguage}</small>
           </button>
         ))}
       </section>
@@ -112,18 +107,20 @@ export default function Home() {
       <section className="contentGrid">
         <article className={`readerPanel glassPanel ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
           <div className="panelHeader">
-            <p className="eyebrow"><Languages size={15} /> Recommended Translation</p>
-            <span>{translation.license}</span>
+            <p className="eyebrow"><Languages size={15} /> Scripture Reader</p>
+            <span>{mode === 'fixed' ? 'English' : translation.language}</span>
           </div>
-          <h2>{translation.name}</h2>
-          <p className="meta">Language: {mode === 'fixed' ? 'English' : translation.language}</p>
           <div className="verseBox">
             <small>{translation.reference}</small>
             <p>{mode === 'fixed' ? getTranslation('web').text : translation.text}</p>
           </div>
-          <div className="languageChips">
+          <div className="readerMeta">
+            <strong>{translation.name}</strong>
+            <span>{translation.license}</span>
+          </div>
+          <div className="languageChips" aria-label="Available local languages">
             <span>{profile.primaryLanguage}</span>
-            {(profile.alternates || []).map((language) => <span key={language}>{language}</span>)}
+            {(profile.alternates || []).slice(0, 2).map((language) => <span key={language}>{language}</span>)}
           </div>
         </article>
 
@@ -142,21 +139,14 @@ export default function Home() {
         </aside>
       </section>
 
-      <section className="featureGrid">
-        <Feature title="Living Earth Interface" icon={<Globe2 />} text="The world becomes the navigation layer for Scripture, language, and cultural context." />
-        <Feature title="Geo Language Engine" icon={<Compass />} text="Country profiles recommend local Scripture languages while preserving manual user control." />
-        <Feature title="License-Safe Registry" icon={<ShieldCheck />} text="Translation metadata stays separate, protecting the product from accidental copyrighted text usage." />
+      <section className="whyPanel glassPanel">
+        <div className="featureIcon"><Globe2 /></div>
+        <div>
+          <p className="eyebrow">Why GeoAware Bible</p>
+          <h3>Scripture follows place.</h3>
+          <p>The Living Earth quietly connects location, language, and open-license Scripture while keeping the technology invisible.</p>
+        </div>
       </section>
     </main>
-  );
-}
-
-function Feature({ title, text, icon }) {
-  return (
-    <article className="featureCard glassPanel">
-      <div className="featureIcon">{icon}</div>
-      <h3>{title}</h3>
-      <p>{text}</p>
-    </article>
   );
 }
