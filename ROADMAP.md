@@ -2,17 +2,35 @@
 
 GeoAware Bible's roadmap is organized as a sequence of named projects. Each project should strengthen the mission of helping pilgrims walk through Scripture.
 
-## Project Genesis: Foundation and Documentation
+## Project Genesis: Foundation and Documentation — Complete
 
-Project Genesis establishes the permanent foundation documents, product constitution, mission language, architectural principles, and contribution expectations for GeoAware Bible.
+Project Genesis established the permanent foundation documents, product constitution, mission language, architectural principles, and contribution expectations for GeoAware Bible.
 
-This phase protects the identity of the project before major product expansion begins.
+This phase protects the identity of the project before major product expansion begins. Project Genesis is now complete, and its foundation remains the standard for future milestones.
 
-## Project Exodus: Photorealistic Living Earth
+## Project Exodus: Photorealistic Living Earth — Active
 
-Project Exodus focuses on the Living Earth experience: a beautiful, performant, geographically aware representation of biblical places, routes, and context.
+Project Exodus is the active milestone. It focuses on the Living Earth experience: a beautiful, performant, geographically aware representation of biblical places, routes, and context.
 
 The goal is not spectacle. The goal is to help pilgrims understand Scripture through place.
+
+### Project Exodus Goals
+
+- Upgrade the Living Earth visual layer.
+- Preserve Scripture reader behavior.
+- Preserve country switching.
+- Preserve GeoPrayer and Scripture Passport foundations.
+- Keep Scripture central.
+- Maintain mobile responsiveness.
+- Avoid unnecessary dependencies.
+
+### Project Exodus Guardrails
+
+- Do not use copyrighted Bible text.
+- Do not add gamification.
+- Do not imitate social media.
+- Do not optimize for screen time.
+- Do not prioritize visual spectacle over Scripture.
 
 ## Project Emmaus: AI Guide
 

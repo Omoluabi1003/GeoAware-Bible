@@ -1,13 +1,13 @@
 {
   "founder": {
     "name": "Paul Iyogun",
-    "role": "Founder and Chief Architect",
     "vision": "To be remembered as the guy who used code to walk pilgrims through Scripture.",
-    "guiding_principle": "Scripture is the destination. Technology is only the road."
+    "guiding_principle": "Scripture is the destination. Technology is only the road.",
+    "title": "Founder and Chief Architect"
   },
   "project_identity": {
     "name": "GeoAware Bible",
-    "architectural_codename": "Project Genesis",
+    "architectural_codename": "Project Exodus",
     "category": "Scripture Experience Platform",
     "tagline": "Walk the Word.",
     "guiding_question": "Does this help the pilgrim walk the Word?",
@@ -56,11 +56,29 @@
   "roadmap": [
     {
       "project": "Project Genesis",
-      "focus": "Foundation and documentation"
+      "focus": "Foundation and documentation",
+      "status": "complete"
     },
     {
       "project": "Project Exodus",
-      "focus": "Photorealistic Living Earth"
+      "focus": "Photorealistic Living Earth",
+      "status": "active",
+      "goals": [
+        "Upgrade the Living Earth visual layer.",
+        "Preserve Scripture reader behavior.",
+        "Preserve country switching.",
+        "Preserve GeoPrayer and Scripture Passport foundations.",
+        "Keep Scripture central.",
+        "Maintain mobile responsiveness.",
+        "Avoid unnecessary dependencies."
+      ],
+      "guardrails": [
+        "Do not use copyrighted Bible text.",
+        "Do not add gamification.",
+        "Do not imitate social media.",
+        "Do not optimize for screen time.",
+        "Do not prioritize visual spectacle over Scripture."
+      ]
     },
     {
       "project": "Project Emmaus",
@@ -91,5 +109,7 @@
     "No app behavior changes.",
     "No dependencies added.",
     "Build remains unaffected."
-  ]
+  ],
+  "current_phase": "Project Exodus",
+  "next_focus": "Photorealistic Living Earth"
 }
