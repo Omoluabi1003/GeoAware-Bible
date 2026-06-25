@@ -37,9 +37,9 @@ export default function Home() {
             <button className={mode === 'geo' ? 'active' : ''} onClick={() => setMode('geo')}><MapPin size={16} /> Follow My Location</button>
             <button className={mode === 'fixed' ? 'active' : ''} onClick={() => setMode('fixed')}><BookOpen size={16} /> Stay In English</button>
           </div>
-          <div className="statusStrip" aria-live="polite">
+          <div className="statusStrip">
             <span>Location confirmed</span>
-            <strong>{profile.flag} {locationLabel}</strong>
+            <strong aria-live="polite" aria-atomic="true">{profile.flag} {locationLabel}</strong>
             <span>Preparing Scripture in {mode === 'fixed' ? 'English' : profile.primaryLanguage}</span>
           </div>
         </div>

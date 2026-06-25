@@ -1,7 +1,7 @@
 export const languageProfiles = {
   US: {
     country: 'United States',
-    region: 'Location confirmed',
+    region: 'North America',
     city: 'Orlando',
     state: 'Florida',
     primaryLanguage: 'English',
@@ -10,12 +10,11 @@ export const languageProfiles = {
     alternates: ['Spanish', 'Haitian Creole'],
     coordinates: { x: 31, y: 42 },
     flag: '🇺🇸',
-    prayer: 'May peace, wisdom, and renewal rest upon every home and city in this land.',
-    welcome: 'Welcome to the United States. Scripture is ready in English.'
+    prayer: 'May peace, wisdom, and renewal rest upon every home and city in this land.'
   },
   NG: {
     country: 'Nigeria',
-    region: 'Location confirmed',
+    region: 'West Africa',
     city: 'Lagos',
     state: 'Lagos',
     primaryLanguage: 'English',
@@ -24,12 +23,11 @@ export const languageProfiles = {
     alternates: ['Yoruba', 'Hausa', 'Igbo', 'Pidgin English'],
     coordinates: { x: 52, y: 50 },
     flag: '🇳🇬',
-    prayer: 'May God bless Nigeria with courage, healing, justice, and light for every generation.',
-    welcome: 'Welcome to Nigeria. Scripture is ready in English, with major Nigerian language pathways prepared.'
+    prayer: 'May God bless Nigeria with courage, healing, justice, and light for every generation.'
   },
   BR: {
     country: 'Brazil',
-    region: 'Location confirmed',
+    region: 'South America',
     city: 'Brasília',
     state: 'Federal District',
     primaryLanguage: 'Portuguese',
@@ -38,12 +36,11 @@ export const languageProfiles = {
     alternates: ['English'],
     coordinates: { x: 39, y: 66 },
     flag: '🇧🇷',
-    prayer: 'May joy, mercy, and hope flow across Brazil like rivers of grace.',
-    welcome: 'Bem-vindo ao Brasil. Scripture is recommended in Portuguese.'
+    prayer: 'May joy, mercy, and hope flow across Brazil like rivers of grace.'
   },
   KE: {
     country: 'Kenya',
-    region: 'Location confirmed',
+    region: 'East Africa',
     city: 'Nairobi',
     state: 'Nairobi County',
     primaryLanguage: 'Swahili',
@@ -52,12 +49,11 @@ export const languageProfiles = {
     alternates: ['English'],
     coordinates: { x: 59, y: 56 },
     flag: '🇰🇪',
-    prayer: 'May the people of Kenya walk in peace, strength, and divine direction.',
-    welcome: 'Welcome to Kenya. Scripture is recommended in Swahili.'
+    prayer: 'May the people of Kenya walk in peace, strength, and divine direction.'
   },
   FR: {
     country: 'France',
-    region: 'Location confirmed',
+    region: 'Western Europe',
     city: 'Paris',
     primaryLanguage: 'French',
     languageCode: 'fr',
@@ -65,12 +61,11 @@ export const languageProfiles = {
     alternates: ['English'],
     coordinates: { x: 48, y: 35 },
     flag: '🇫🇷',
-    prayer: 'May faith, compassion, and truth shine across France with renewed clarity.',
-    welcome: 'Bienvenue en France. Scripture is recommended in French.'
+    prayer: 'May faith, compassion, and truth shine across France with renewed clarity.'
   },
   JP: {
     country: 'Japan',
-    region: 'Location confirmed',
+    region: 'East Asia',
     city: 'Tokyo',
     primaryLanguage: 'Japanese',
     languageCode: 'ja',
@@ -78,8 +73,7 @@ export const languageProfiles = {
     alternates: ['English'],
     coordinates: { x: 79, y: 43 },
     flag: '🇯🇵',
-    prayer: 'May quiet strength, peace, and the light of truth rest upon Japan.',
-    welcome: 'Welcome to Japan. Scripture is recommended in Japanese.'
+    prayer: 'May quiet strength, peace, and the light of truth rest upon Japan.'
   }
 };
 
