@@ -263,11 +263,15 @@ function drawJourneyRoute(ctx, journeyRoute, radius, center, rotation, size, mot
     ctx.quadraticCurveTo(controlX, controlY, projected.x, projected.y);
     ctx.strokeStyle = isCompleted ? 'rgba(247, 215, 122, .84)' : isActiveSegment ? `rgba(255, 239, 184, ${0.82 * activePulse})` : 'rgba(204, 176, 103, .44)';
     ctx.lineWidth = Math.max(isActiveSegment ? 3.2 : 2.4, size * (isActiveSegment ? 0.0072 : 0.0058));
-    ctx.shadowColor = isActiveSegment ? 'rgba(255, 232, 151, .46)' : 'transparent';
-    ctx.shadowBlur = isActiveSegment ? Math.max(4, size * 0.012) : 0;
+    if (isActiveSegment) {
+      ctx.shadowColor = 'rgba(255, 232, 151, .46)';
+      ctx.shadowBlur = Math.max(4, size * 0.012);
+    }
     ctx.stroke();
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
+    if (isActiveSegment) {
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+    }
   }
 
   projectedWaypoints.forEach(({ waypoint, projected }) => {

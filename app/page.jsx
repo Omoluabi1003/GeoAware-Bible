@@ -378,6 +378,18 @@ function HomeContent({ walkTheWord }) {
             </div>
             <h2>{walkWaypoint.title}</h2>
             <p>{walkWaypoint.historicalSummary}</p>
+            <label className="geoNarrativeSelector">
+              <span>GeoNarrative</span>
+              <select
+                value={walkTheWord.journeyId}
+                onChange={(event) => walkTheWord.selectJourney(event.target.value)}
+                aria-label="Choose Walk the Word GeoNarrative"
+              >
+                {walkTheWord.availableJourneys.map((journey) => (
+                  <option key={journey.id} value={journey.id}>{journey.title}</option>
+                ))}
+              </select>
+            </label>
             <div className="walkControls" aria-label="Walk the Word controls">
               <div className="walkWaypointSummary">
                 {walkTheWord.nextWaypoint ? (
