@@ -8,6 +8,7 @@ import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
 import ProjectEarthRenderer from '../src/renderers/project-earth/ProjectEarthRenderer.jsx';
 import { rotationForGeoCoordinate } from '../src/renderers/project-earth/geoCoordinateEngine.js';
+import { GeoLayerProvider, useGeoLayers } from '../src/context/GeoLayerContext.jsx';
 
 const journeyStats = [
   ['Countries', '6'],
@@ -139,7 +140,7 @@ function useReducedMotion() {
   return reducedMotion;
 }
 
-export default function Home() {
+function HomeContent() {
   const [countryCode, setCountryCode] = useState('US');
   const [mode, setMode] = useState('geo');
   const [arrivalStep, setArrivalStep] = useState('ready');
@@ -177,6 +178,8 @@ export default function Home() {
     currentScripture: activeTranslation
   }), [activeDetectedCoordinates, activeTranslation, GeoContext, profile]);
   const languageRecommendations = GeoContext.languageRecommendations || [];
+  const { activeLayers } = useGeoLayers();
+  const layerSummary = `${activeLayers.length} GIS layers ready`;
   const countries = Object.entries(languageProfiles);
   const locationLabel = buildLocationLabel(profile, activeDetectedLocality);
   const arrivalMessage = arrivalStep === 'finding'
@@ -329,6 +332,7 @@ export default function Home() {
             <span>{activeTranslation.licenseSource}</span>
             <span className="metadataBadge">Open-License Scripture Engine</span>
             <span className="metadataBadge">GeoScripture Engine</span>
+            <span className="metadataBadge">{layerSummary}</span>
           </div>
           <div className="languageChips" aria-label="Scripture language recommendations">
             {languageRecommendations.slice(0, 5).map((language) => (
@@ -363,5 +367,13 @@ export default function Home() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <GeoLayerProvider>
+      <HomeContent />
+    </GeoLayerProvider>
   );
 }
