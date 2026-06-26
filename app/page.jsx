@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Globe2, Languages, MapPin, Plane } from 'lucide-react';
+import { BookOpen, Footprints, Globe2, Languages, MapPin, Plane } from 'lucide-react';
 import { resolveGeoContext } from '../src/data/geoContext.js';
 import { buildGeoScriptureContext } from '../src/data/geoscriptureEngine.js';
 import { languageProfiles } from '../src/data/languageProfiles.js';
@@ -9,6 +9,7 @@ import { getTranslation } from '../src/data/translations.js';
 import ProjectEarthRenderer from '../src/renderers/project-earth/ProjectEarthRenderer.jsx';
 import { rotationForGeoCoordinate } from '../src/renderers/project-earth/geoCoordinateEngine.js';
 import { GeoLayerProvider } from '../src/context/GeoLayerContext.jsx';
+import WalkTheWordController from '../src/controllers/WalkTheWordController.jsx';
 
 const journeyStats = [
   ['Countries', '6'],
@@ -165,7 +166,7 @@ function useReducedMotion() {
   return reducedMotion;
 }
 
-function HomeContent() {
+function HomeContent({ walkTheWord }) {
   const [countryCode, setCountryCode] = useState('US');
   const [mode, setMode] = useState('geo');
   const [arrivalStep, setArrivalStep] = useState('ready');
@@ -184,7 +185,9 @@ function HomeContent() {
     browserLanguages: typeof navigator === 'undefined' ? [] : navigator.languages
   }), [countryCode, activeDetectedCoordinates, activeDetectedLocality, mode]);
   const profile = languageProfiles[GeoContext.countryCode] || languageProfiles.US;
-  const targetEarthCamera = useMemo(() => resolveEarthCamera(profile, activeDetectedCoordinates), [profile, activeDetectedCoordinates]);
+  const walkWaypoint = walkTheWord.activeWaypoint;
+  const walkWaypointCoordinates = walkWaypoint?.coordinates || null;
+  const targetEarthCamera = useMemo(() => resolveEarthCamera(profile, walkWaypointCoordinates || activeDetectedCoordinates), [profile, activeDetectedCoordinates, walkWaypointCoordinates]);
   const animationFrameRef = useRef(null);
   const cameraRef = useRef(targetEarthCamera);
   const [earthCamera, setEarthCamera] = useState(targetEarthCamera);
@@ -206,7 +209,7 @@ function HomeContent() {
   }), [activeDetectedCoordinates, activeTranslation, GeoContext, profile]);
   const languageRecommendations = GeoContext.languageRecommendations || [];
   const countries = Object.entries(languageProfiles);
-  const locationLabel = buildLocationLabel(profile, activeDetectedLocality);
+  const locationLabel = walkWaypoint?.title || buildLocationLabel(profile, activeDetectedLocality);
   const arrivalMessage = arrivalStep === 'finding'
     ? `Finding ${profile.country}...`
     : arrivalStep === 'recognized'
@@ -326,9 +329,13 @@ function HomeContent() {
     };
   }, [targetEarthCamera, reducedMotion]);
 
-  const scriptureLocationSummary = GeoContext.isEnglishOverride
-    ? `Reading in English while journeying through ${GeoContext.country}.`
-    : `Reading ${GeoContext.effectiveLanguage} Scripture with ${GeoContext.country} in view.`;
+  const scriptureLocationSummary = walkTheWord.isActive && walkWaypoint
+    ? `${walkTheWord.journey.title}: ${walkWaypoint.title} — ${walkWaypoint.historicalSummary}`
+    : GeoContext.isEnglishOverride
+      ? `Reading in English while journeying through ${GeoContext.country}.`
+      : `Reading ${GeoContext.effectiveLanguage} Scripture with ${GeoContext.country} in view.`;
+  const displayedReference = walkTheWord.isActive && walkWaypoint ? walkWaypoint.scriptureRefs[0] : activeTranslation.reference;
+  const displayedText = walkTheWord.isActive && walkWaypoint ? walkWaypoint.historicalSummary : activeTranslation.text;
 
   return (
     <main className="pageShell">
@@ -342,6 +349,7 @@ function HomeContent() {
           <div className="modeSwitch" aria-label="Scripture journey choices">
             <button className={mode === 'geo' ? 'active' : ''} onClick={requestLocationFollow}><MapPin size={16} /> Read Near Me</button>
             <button className={mode === 'fixed' ? 'active' : ''} onClick={() => setMode('fixed')}><BookOpen size={16} /> Read in English</button>
+            <button className={walkTheWord.isActive ? 'active' : ''} onClick={walkTheWord.start}><Footprints size={16} /> Walk the Word</button>
           </div>
         </div>
 
@@ -356,7 +364,7 @@ function HomeContent() {
 
         <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
           <h2><span aria-hidden="true">{profile.flag}</span> {locationLabel}</h2>
-          <small aria-live="polite" aria-atomic="true">{locationError || (arrivalStep === 'ready' ? 'Scripture is ready for your journey' : arrivalMessage)}</small>
+          <small aria-live="polite" aria-atomic="true">{walkTheWord.isActive && walkWaypoint ? `${walkWaypoint.scriptureRefs[0]} · paused at waypoint` : locationError || (arrivalStep === 'ready' ? 'Scripture is ready for your journey' : arrivalMessage)}</small>
         </div>
       </section>
 
@@ -380,9 +388,15 @@ function HomeContent() {
             {scriptureLocationSummary}
           </div>
           <div className={`verseBox ${activeTranslation.availability?.status === 'unavailable' ? 'unavailable' : ''}`}>
-            <small>{activeTranslation.reference}</small>
-            <p>{activeTranslation.text}</p>
+            <small>{displayedReference}</small>
+            <p>{displayedText}</p>
           </div>
+          {walkTheWord.isActive && walkWaypoint ? (
+            <div className="walkControls" aria-label="Walk the Word controls">
+              <span>Stop {walkTheWord.engine.waypointIndex + 1} of {walkTheWord.engine.waypointCount}</span>
+              <button type="button" onClick={walkTheWord.continue}>{walkTheWord.engine.canMoveNext ? 'Continue journey' : 'Finish journey'}</button>
+            </div>
+          ) : null}
           <div className="readerMeta">
             <strong>{activeTranslation.name}</strong>
             <span>{activeTranslation.license}</span>
@@ -427,7 +441,9 @@ function HomeContent() {
 export default function Home() {
   return (
     <GeoLayerProvider>
-      <HomeContent />
+      <WalkTheWordController>
+        {(walkTheWord) => <HomeContent walkTheWord={walkTheWord} />}
+      </WalkTheWordController>
     </GeoLayerProvider>
   );
 }
