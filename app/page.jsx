@@ -386,6 +386,13 @@ function HomeContent({ walkTheWord }) {
                   <strong>{walkWaypoint.title} complete · {walkWaypointReferenceLabel}</strong>
                 )}
               </div>
+              {walkTheWord.engine.canMoveNext ? (
+                walkTheWord.isAutoWalking ? (
+                  <button type="button" onClick={walkTheWord.pauseAutoWalk}>Pause Journey</button>
+                ) : (
+                  <button type="button" onClick={walkTheWord.startAutoWalk}>Auto Walk</button>
+                )
+              ) : null}
               <button type="button" onClick={walkTheWord.continue}>{walkTheWord.engine.canMoveNext ? 'Continue Journey' : 'Finish Journey'}</button>
             </div>
           </div>
