@@ -12,6 +12,7 @@ export function getTranslation(translationId) {
     language: passage.language,
     license: passage.license.name,
     licenseSource: passage.license.source,
+    availability: passage.availability,
     reference: passage.reference,
     text: passage.text,
     book: passage.book,

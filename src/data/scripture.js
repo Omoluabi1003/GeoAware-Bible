@@ -48,25 +48,11 @@ const scriptureCatalog = {
         chapterNumber: 3,
         verseNumber: 16
       },
-      books: {
-        john: {
-          id: 'john',
-          name: 'John',
-          testament: 'New Testament',
-          order: 43,
-          chapters: {
-            3: {
-              number: 3,
-              verses: {
-                16: {
-                  number: 16,
-                  text: 'Traduction française à connecter depuis une source ouverte vérifiée.'
-                }
-              }
-            }
-          }
-        }
-      }
+      availability: {
+        status: 'unavailable',
+        message: 'Awaiting verified public-domain or open-license Scripture text; no Scripture text is bundled for this language yet.'
+      },
+      books: {}
     },
     'sample-pt': {
       id: 'sample-pt',
@@ -82,25 +68,11 @@ const scriptureCatalog = {
         chapterNumber: 3,
         verseNumber: 16
       },
-      books: {
-        john: {
-          id: 'john',
-          name: 'John',
-          testament: 'New Testament',
-          order: 43,
-          chapters: {
-            3: {
-              number: 3,
-              verses: {
-                16: {
-                  number: 16,
-                  text: 'Tradução portuguesa a ser conectada a partir de uma fonte aberta verificada.'
-                }
-              }
-            }
-          }
-        }
-      }
+      availability: {
+        status: 'unavailable',
+        message: 'Awaiting verified public-domain or open-license Scripture text; no Scripture text is bundled for this language yet.'
+      },
+      books: {}
     },
     'sample-sw': {
       id: 'sample-sw',
@@ -116,25 +88,11 @@ const scriptureCatalog = {
         chapterNumber: 3,
         verseNumber: 16
       },
-      books: {
-        john: {
-          id: 'john',
-          name: 'John',
-          testament: 'New Testament',
-          order: 43,
-          chapters: {
-            3: {
-              number: 3,
-              verses: {
-                16: {
-                  number: 16,
-                  text: 'Tafsiri ya Kiswahili itaunganishwa kutoka chanzo huria kilichothibitishwa.'
-                }
-              }
-            }
-          }
-        }
-      }
+      availability: {
+        status: 'unavailable',
+        message: 'Awaiting verified public-domain or open-license Scripture text; no Scripture text is bundled for this language yet.'
+      },
+      books: {}
     },
     'sample-ja': {
       id: 'sample-ja',
@@ -150,25 +108,11 @@ const scriptureCatalog = {
         chapterNumber: 3,
         verseNumber: 16
       },
-      books: {
-        john: {
-          id: 'john',
-          name: 'John',
-          testament: 'New Testament',
-          order: 43,
-          chapters: {
-            3: {
-              number: 3,
-              verses: {
-                16: {
-                  number: 16,
-                  text: 'Verified open-license Japanese Scripture text will be connected here.'
-                }
-              }
-            }
-          }
-        }
-      }
+      availability: {
+        status: 'unavailable',
+        message: 'Awaiting verified public-domain or open-license Scripture text; no Scripture text is bundled for this language yet.'
+      },
+      books: {}
     }
   }
 };
@@ -187,6 +131,22 @@ export function getScriptureTranslation(translationId) {
 
 export function getScripturePassage(translationId, passage = defaultPassage) {
   const translation = getScriptureTranslation(translationId);
+
+  if (translation.availability?.status === 'unavailable') {
+    return {
+      translationId: translation.id,
+      translationName: translation.name,
+      abbreviation: translation.abbreviation,
+      language: translation.language,
+      license: translation.license,
+      availability: translation.availability,
+      book: null,
+      chapter: null,
+      verse: null,
+      reference: 'Scripture text unavailable',
+      text: translation.availability.message
+    };
+  }
   const requestedPassage = passage || translation.defaultPassage || defaultPassage;
   const fallbackPassage = translation.defaultPassage || defaultPassage;
 
@@ -200,6 +160,7 @@ export function getScripturePassage(translationId, passage = defaultPassage) {
     abbreviation: translation.abbreviation,
     language: translation.language,
     license: translation.license,
+    availability: translation.availability || { status: 'available', message: 'Scripture text available' },
     book: {
       id: book.id,
       name: book.name,

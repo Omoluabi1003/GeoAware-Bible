@@ -21,11 +21,25 @@ export const languageProfiles = {
     primaryLanguage: 'English',
     languageCode: 'en',
     translationId: 'web',
-    alternates: ['Yoruba', 'Hausa', 'Igbo', 'Pidgin English'],
+    alternates: ['Yoruba', 'Igbo', 'Hausa'],
     coordinates: { latitude: 9.082, longitude: 8.6753 },
     countryHighlight: { latitude: 9.6, longitude: 8.1, radiusLatitude: 5.4, radiusLongitude: 4.8, tilt: -6 },
     flag: '🇳🇬',
     prayer: 'May God bless Nigeria with courage, healing, justice, and light for every generation.'
+  },
+
+  CD: {
+    country: 'Congo',
+    region: 'Central Africa',
+    city: 'Kinshasa',
+    primaryLanguage: 'Lingala',
+    languageCode: 'ln',
+    translationId: 'web',
+    alternates: ['French', 'English'],
+    coordinates: { latitude: -4.0383, longitude: 21.7587 },
+    countryHighlight: { latitude: -2.9, longitude: 23.7, radiusLatitude: 10.5, radiusLongitude: 8.8, tilt: -8 },
+    flag: '🇨🇩',
+    prayer: 'May hope, healing, and peace rise across Congo with steadfast love.'
   },
   BR: {
     country: 'Brazil',
