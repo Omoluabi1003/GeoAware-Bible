@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, Globe2, Languages, MapPin, Plane } from 'lucide-react';
 import { getGeoContext } from '../src/data/geoContext.js';
+import { buildGeoScriptureContext } from '../src/data/geoscriptureEngine.js';
 import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
 import ProjectEarthRenderer from '../src/renderers/project-earth/ProjectEarthRenderer.jsx';
@@ -159,6 +160,16 @@ export default function Home() {
   const activeTranslation = useMemo(() => (
     mode === 'fixed' ? getTranslation('web') : getTranslation(profile.translationId)
   ), [mode, profile.translationId]);
+  const geoScripture = useMemo(() => buildGeoScriptureContext({
+    latitude: activeDetectedCoordinates?.latitude ?? profile.coordinates?.latitude,
+    longitude: activeDetectedCoordinates?.longitude ?? profile.coordinates?.longitude,
+    country: activeDetectedLocality?.country || GeoContext.country,
+    region: activeDetectedLocality?.region || GeoContext.region,
+    locality: activeDetectedLocality?.city || profile.city,
+    language: activeTranslation.language,
+    date: new Date(),
+    currentScripture: activeTranslation
+  }), [activeDetectedCoordinates, activeDetectedLocality, activeTranslation, GeoContext, profile]);
   const alternateLanguages = useMemo(() => (
     [...new Set(profile.alternates || [])]
       .filter((language) => language !== profile.primaryLanguage)
@@ -312,6 +323,7 @@ export default function Home() {
             <span>{activeTranslation.license}</span>
             <span>{activeTranslation.licenseSource}</span>
             <span className="metadataBadge">Open-License Scripture Engine</span>
+            <span className="metadataBadge">GeoScripture Engine</span>
           </div>
           <div className="languageChips" aria-label="Available local languages">
             <span>{profile.primaryLanguage}</span>
@@ -329,7 +341,7 @@ export default function Home() {
           </div>
           <div className="prayerCard">
             <small>GeoPrayer</small>
-            <p>{profile.prayer}</p>
+            <p>{geoScripture.PrayerPrompt}</p>
           </div>
         </aside>
       </section>
@@ -339,7 +351,7 @@ export default function Home() {
         <div>
           <p className="eyebrow">Why GeoAware Bible</p>
           <h3>Scripture follows place.</h3>
-          <p>The Living Earth quietly connects location, language, and open-license Scripture while keeping the technology invisible.</p>
+          <p>{geoScripture.GeoInsight}</p>
         </div>
       </section>
     </main>
