@@ -2,20 +2,25 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createGeoNarrativeEngine } from '../data/journeyEngine.js';
-import { geoNarrativeList } from '../data/geoNarrativeRegistry.js';
+import { getGeoNarrative, geoNarrativeList } from '../data/geoNarrativeRegistry.js';
 
 export const WALK_THE_WORD_JOURNEY_ID = 'journey_to_bethlehem';
 const AUTO_WALK_WAYPOINT_PAUSE_MS = 2600;
 
+function resolveRegisteredJourneyId(nextJourneyId) {
+  return getGeoNarrative(nextJourneyId)?.id || WALK_THE_WORD_JOURNEY_ID;
+}
+
 export function useWalkTheWordController({ journeyId = WALK_THE_WORD_JOURNEY_ID } = {}) {
-  const [selectedJourneyId, setSelectedJourneyId] = useState(journeyId);
+  const [selectedJourneyId, setSelectedJourneyId] = useState(() => resolveRegisteredJourneyId(journeyId));
   const [isActive, setIsActive] = useState(false);
   const [waypointIndex, setWaypointIndex] = useState(0);
   const [isAutoWalking, setIsAutoWalking] = useState(false);
   const engine = useMemo(() => createGeoNarrativeEngine({ journeyId: selectedJourneyId, waypointIndex }), [selectedJourneyId, waypointIndex]);
+  const selectedGeoNarrative = engine.journey;
   const activeWaypoint = isActive ? engine.currentWaypoint : null;
   const nextWaypoint = isActive ? engine.nextWaypoint : null;
-  const routeWaypoints = isActive ? engine.journey?.waypoints || Object.freeze([]) : Object.freeze([]);
+  const routeWaypoints = isActive ? selectedGeoNarrative?.waypoints || Object.freeze([]) : Object.freeze([]);
 
   useEffect(() => {
     if (!isActive || !isAutoWalking) return undefined;
@@ -34,7 +39,7 @@ export function useWalkTheWordController({ journeyId = WALK_THE_WORD_JOURNEY_ID 
 
   return useMemo(() => Object.freeze({
     isActive,
-    journey: engine.journey,
+    journey: selectedGeoNarrative,
     journeyId: engine.journeyId,
     availableJourneys: geoNarrativeList,
     engine,
@@ -43,8 +48,8 @@ export function useWalkTheWordController({ journeyId = WALK_THE_WORD_JOURNEY_ID 
     routeWaypoints,
     isAutoWalking,
     selectJourney: (nextJourneyId) => {
-      if (!nextJourneyId || nextJourneyId === selectedJourneyId) return;
-      setSelectedJourneyId(nextJourneyId);
+      const resolvedJourneyId = resolveRegisteredJourneyId(nextJourneyId);
+      setSelectedJourneyId(resolvedJourneyId);
       setWaypointIndex(0);
       setIsAutoWalking(false);
     },
@@ -79,7 +84,7 @@ export function useWalkTheWordController({ journeyId = WALK_THE_WORD_JOURNEY_ID 
       setIsActive(false);
       setWaypointIndex(0);
     }
-  }), [activeWaypoint, engine, isActive, isAutoWalking, nextWaypoint, routeWaypoints, selectedJourneyId]);
+  }), [activeWaypoint, engine, isActive, isAutoWalking, nextWaypoint, routeWaypoints, selectedGeoNarrative]);
 }
 
 export default function WalkTheWordController({ children, journeyId = WALK_THE_WORD_JOURNEY_ID }) {

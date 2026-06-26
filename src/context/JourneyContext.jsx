@@ -2,7 +2,13 @@
 
 import { createContext, useContext, useMemo, useState } from 'react';
 import { createGeoNarrativeEngine } from '../data/journeyEngine.js';
-import { GeoNarrativeRegistry, geoNarrativeList } from '../data/journeyRegistry.js';
+import { GeoNarrativeRegistry, geoNarrativeList, getGeoNarrative } from '../data/journeyRegistry.js';
+
+const DEFAULT_GEONARRATIVE_ID = 'journey_to_bethlehem';
+
+function resolveRegisteredJourneyId(journeyId) {
+  return getGeoNarrative(journeyId)?.id || DEFAULT_GEONARRATIVE_ID;
+}
 
 export const JourneyContext = createContext(Object.freeze({
   registry: GeoNarrativeRegistry,
@@ -16,8 +22,8 @@ export const JourneyContext = createContext(Object.freeze({
   goToPrevious: () => {}
 }));
 
-export function JourneyProvider({ initialJourneyId = geoNarrativeList[0]?.id, initialWaypointIndex = 0, children }) {
-  const [selectedJourneyId, setSelectedJourneyId] = useState(initialJourneyId);
+export function JourneyProvider({ initialJourneyId = DEFAULT_GEONARRATIVE_ID, initialWaypointIndex = 0, children }) {
+  const [selectedJourneyId, setSelectedJourneyId] = useState(() => resolveRegisteredJourneyId(initialJourneyId));
   const [waypointIndex, setWaypointIndex] = useState(initialWaypointIndex);
   const engine = useMemo(() => createGeoNarrativeEngine({
     journeyId: selectedJourneyId,
@@ -31,7 +37,7 @@ export function JourneyProvider({ initialJourneyId = geoNarrativeList[0]?.id, in
     selectedJourneyId: engine.journeyId,
     waypointIndex: engine.waypointIndex,
     selectJourney: (journeyId) => {
-      setSelectedJourneyId(journeyId);
+      setSelectedJourneyId(resolveRegisteredJourneyId(journeyId));
       setWaypointIndex(0);
     },
     goToWaypoint: (nextWaypointIndex) => setWaypointIndex(nextWaypointIndex),
