@@ -1,4 +1,5 @@
 import { scriptureLanguages } from './scriptureLanguageRegistry.js';
+import { journeyList } from './journeyRegistry.js';
 
 export const GEO_LAYER_TYPES = Object.freeze({
   scripture: 'scripture',
@@ -73,57 +74,35 @@ const biblicalJourneyLayer = Object.freeze({
   id: 'biblical-journeys',
   type: GEO_LAYER_TYPES.biblicalJourney,
   title: 'Biblical Journeys',
-  description: 'Coordinate-ready route placeholders for biblical journeys; coordinates can be filled from vetted GIS sources later.',
+  description: 'GIS-ready ordered biblical journeys from the JourneyRegistry.',
   toggleReady: true,
-  routes: Object.freeze([
-    freezeRoute({
-      id: 'paul-first-missionary-journey',
-      layerType: GEO_LAYER_TYPES.biblicalJourney,
-      title: "Paul's First Missionary Journey",
-      description: 'Route placeholder for Antioch, Cyprus, Pisidian Antioch, Iconium, Lystra, Derbe, and return legs.',
-      scriptureRefs: ['Acts 13:1-14:28'],
-      languageCodes: ['el', 'tr'],
-      sourceStatus: SOURCE_STATUS.placeholder,
-      waypoints: [
-        { id: 'antioch-syria', title: 'Antioch in Syria', description: 'Commissioning and return-report waypoint.', lat: null, lon: null, coordinates: { latitude: null, longitude: null }, scriptureRefs: ['Acts 13:1-3', 'Acts 14:26-28'], languageCodes: ['el', 'tr'], sourceStatus: SOURCE_STATUS.placeholder },
-        { id: 'cyprus', title: 'Cyprus', description: 'Island ministry waypoint including Salamis and Paphos.', lat: null, lon: null, coordinates: { latitude: null, longitude: null }, scriptureRefs: ['Acts 13:4-12'], languageCodes: ['el'], sourceStatus: SOURCE_STATUS.placeholder },
-        { id: 'derbe', title: 'Derbe', description: 'Interior Asia Minor waypoint before the return route.', lat: null, lon: null, coordinates: { latitude: null, longitude: null }, scriptureRefs: ['Acts 14:20-21'], languageCodes: ['tr'], sourceStatus: SOURCE_STATUS.placeholder }
-      ]
-    }),
-    freezeRoute({
-      id: 'paul-second-missionary-journey',
-      layerType: GEO_LAYER_TYPES.biblicalJourney,
-      title: "Paul's Second Missionary Journey",
-      description: 'Route placeholder from Antioch through Asia Minor, Macedonia, Athens, Corinth, and return.',
-      scriptureRefs: ['Acts 15:36-18:22'],
-      languageCodes: ['el', 'tr'],
-      sourceStatus: SOURCE_STATUS.placeholder,
-      waypoints: []
-    }),
-    freezeRoute({
-      id: 'paul-third-missionary-journey',
-      layerType: GEO_LAYER_TYPES.biblicalJourney,
-      title: "Paul's Third Missionary Journey",
-      description: 'Route placeholder for Galatia/Phrygia, Ephesus, Macedonia, Greece, Troas, Miletus, Tyre, and Jerusalem.',
-      scriptureRefs: ['Acts 18:23-21:17'],
-      languageCodes: ['el', 'tr', 'he'],
-      sourceStatus: SOURCE_STATUS.placeholder,
-      waypoints: []
-    }),
-    freezeRoute({
-      id: 'joseph-mary-bethlehem',
-      layerType: GEO_LAYER_TYPES.biblicalJourney,
-      title: 'Joseph and Mary Journey to Bethlehem',
-      description: 'Route placeholder from Nazareth to Bethlehem for future pilgrimage-safe GIS enrichment.',
-      scriptureRefs: ['Luke 2:1-7'],
-      languageCodes: ['he', 'ar'],
-      sourceStatus: SOURCE_STATUS.placeholder,
-      waypoints: [
-        { id: 'nazareth', title: 'Nazareth', description: 'Origin waypoint named in Luke 2.', lat: null, lon: null, coordinates: { latitude: null, longitude: null }, scriptureRefs: ['Luke 2:4'], languageCodes: ['he', 'ar'], sourceStatus: SOURCE_STATUS.placeholder },
-        { id: 'bethlehem', title: 'Bethlehem', description: 'Destination waypoint named in Luke 2.', lat: null, lon: null, coordinates: { latitude: null, longitude: null }, scriptureRefs: ['Luke 2:4-7'], languageCodes: ['he', 'ar'], sourceStatus: SOURCE_STATUS.placeholder }
-      ]
-    })
-  ])
+  routes: Object.freeze(journeyList.map((journey) => freezeRoute({
+    id: journey.id,
+    layerType: GEO_LAYER_TYPES.biblicalJourney,
+    title: journey.title,
+    description: journey.description,
+    scriptureRefs: journey.scriptureRefs,
+    languageCodes: [],
+    sourceStatus: SOURCE_STATUS.derivedFromRegistry,
+    futureSyncChannels: journey.futureSyncChannels,
+    waypoints: journey.waypoints.map((waypoint) => ({
+      id: waypoint.id,
+      title: waypoint.title,
+      description: waypoint.historicalSummary,
+      historicalSummary: waypoint.historicalSummary,
+      sequence: waypoint.sequence,
+      estimatedTravelDuration: waypoint.estimatedTravelDuration,
+      lat: waypoint.latitude,
+      lon: waypoint.longitude,
+      latitude: waypoint.latitude,
+      longitude: waypoint.longitude,
+      coordinates: waypoint.coordinates,
+      scriptureRefs: waypoint.scriptureRefs,
+      languageCodes: [],
+      sourceStatus: SOURCE_STATUS.derivedFromRegistry,
+      synchronization: waypoint.synchronization
+    }))
+  })))
 });
 
 const christianRadioLayer = Object.freeze({
