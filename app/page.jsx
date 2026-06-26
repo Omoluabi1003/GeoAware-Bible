@@ -187,6 +187,11 @@ function HomeContent({ walkTheWord }) {
   const profile = languageProfiles[GeoContext.countryCode] || languageProfiles.US;
   const walkWaypoint = walkTheWord.activeWaypoint;
   const walkWaypointCoordinates = walkWaypoint?.coordinates || null;
+  const walkJourneyRoute = useMemo(() => (walkTheWord.isActive ? {
+    waypoints: walkTheWord.routeWaypoints,
+    activeWaypointId: walkWaypoint?.id || null,
+    nextWaypointId: walkTheWord.nextWaypoint?.id || null
+  } : null), [walkTheWord.isActive, walkTheWord.routeWaypoints, walkWaypoint?.id, walkTheWord.nextWaypoint?.id]);
   const targetEarthCamera = useMemo(() => resolveEarthCamera(profile, walkWaypointCoordinates || activeDetectedCoordinates), [profile, activeDetectedCoordinates, walkWaypointCoordinates]);
   const animationFrameRef = useRef(null);
   const cameraRef = useRef(targetEarthCamera);
@@ -360,6 +365,7 @@ function HomeContent({ walkTheWord }) {
           activeLocationLabel={locationLabel}
           activeCountryHighlight={profile.countryHighlight}
           isTransitioning={isCameraTransitioning}
+          journeyRoute={walkJourneyRoute}
         />
 
         <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
@@ -393,7 +399,7 @@ function HomeContent({ walkTheWord }) {
           </div>
           {walkTheWord.isActive && walkWaypoint ? (
             <div className="walkControls" aria-label="Walk the Word controls">
-              <span>Stop {walkTheWord.engine.waypointIndex + 1} of {walkTheWord.engine.waypointCount}</span>
+              <span>Waypoint {walkTheWord.engine.waypointIndex + 1} of {walkTheWord.engine.waypointCount}</span>
               <button type="button" onClick={walkTheWord.continue}>{walkTheWord.engine.canMoveNext ? 'Continue journey' : 'Finish journey'}</button>
             </div>
           ) : null}

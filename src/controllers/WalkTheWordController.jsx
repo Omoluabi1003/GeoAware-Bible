@@ -10,6 +10,8 @@ export function useWalkTheWordController({ journeyId = WALK_THE_WORD_JOURNEY_ID 
   const [waypointIndex, setWaypointIndex] = useState(0);
   const engine = useMemo(() => createJourneyEngine({ journeyId, waypointIndex }), [journeyId, waypointIndex]);
   const activeWaypoint = isActive ? engine.currentWaypoint : null;
+  const nextWaypoint = isActive ? engine.nextWaypoint : null;
+  const routeWaypoints = isActive ? engine.journey?.waypoints || Object.freeze([]) : Object.freeze([]);
 
   return useMemo(() => Object.freeze({
     isActive,
@@ -17,6 +19,8 @@ export function useWalkTheWordController({ journeyId = WALK_THE_WORD_JOURNEY_ID 
     journeyId: engine.journeyId,
     engine,
     activeWaypoint,
+    nextWaypoint,
+    routeWaypoints,
     voiceNarration: Object.freeze({
       enabled: false,
       ready: false,
@@ -38,7 +42,7 @@ export function useWalkTheWordController({ journeyId = WALK_THE_WORD_JOURNEY_ID 
       setIsActive(false);
       setWaypointIndex(0);
     }
-  }), [activeWaypoint, engine, isActive]);
+  }), [activeWaypoint, engine, isActive, nextWaypoint, routeWaypoints]);
 }
 
 export default function WalkTheWordController({ children, journeyId = WALK_THE_WORD_JOURNEY_ID }) {

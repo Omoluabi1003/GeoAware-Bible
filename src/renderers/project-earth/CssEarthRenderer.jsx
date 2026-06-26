@@ -5,13 +5,36 @@ import { GlobeMaterials } from './layers/GlobeMaterials.jsx';
 import { GridLines } from './layers/GridLines.jsx';
 import { Lighting } from './layers/Lighting.jsx';
 
+
+function RouteOverlay({ journeyRoute, rotation }) {
+  const waypoints = journeyRoute?.waypoints || [];
+  if (waypoints.length < 2) return null;
+
+  const projectedWaypoints = waypoints.map((waypoint) => ({
+    waypoint,
+    projected: projectGeoCoordinate(waypoint.coordinates || waypoint, 50, 50, rotation)
+  }));
+  const pathData = projectedWaypoints.map(({ projected }, index) => `${index === 0 ? 'M' : 'L'} ${projected.percent.x} ${projected.percent.y}`).join(' ');
+
+  return (
+    <svg className="journeyRouteOverlay" viewBox="0 0 100 100" aria-hidden="true">
+      <path className="journeyRoutePath" d={pathData} />
+      {projectedWaypoints.map(({ waypoint, projected }) => {
+        const state = waypoint.id === journeyRoute.activeWaypointId ? 'active' : waypoint.id === journeyRoute.nextWaypointId ? 'next' : 'idle';
+        return <circle key={waypoint.id} className="journeyWaypointMarker" data-state={state} cx={projected.percent.x} cy={projected.percent.y} r={state === 'active' ? 1.8 : 1.35} opacity={projected.visible ? 1 : 0.22} />;
+      })}
+    </svg>
+  );
+}
+
 export function CssEarthRenderer({
   coordinates = { latitude: 0, longitude: 0 },
   rotation = { x: 0, y: 0 },
   signalLabel = 'Earth signal',
   activeLocationLabel = '',
   activeCountryHighlight = null,
-  isTransitioning = false
+  isTransitioning = false,
+  journeyRoute = null
 }) {
   const beacon = projectGeoCoordinate(coordinates, 50, 50, rotation);
   const activeCountry = activeCountryHighlight
@@ -42,6 +65,7 @@ export function CssEarthRenderer({
       <Clouds />
       <Lighting />
       <GridLines />
+      <RouteOverlay journeyRoute={journeyRoute} rotation={rotation} />
       <div className="beacon" style={beaconStyle} aria-label={signalLabel} data-ready={!isTransitioning}>
         <span aria-hidden="true" />
       </div>

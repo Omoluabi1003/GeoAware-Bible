@@ -232,7 +232,47 @@ function drawCountryHighlight(ctx, activeCountryHighlight, radius, center, rotat
   ctx.restore();
 }
 
-function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0, framePulse: 1 }, activeCountryHighlight = null) {
+function drawJourneyRoute(ctx, journeyRoute, radius, center, rotation, size) {
+  const waypoints = journeyRoute?.waypoints || [];
+  if (waypoints.length < 2) return;
+
+  const projectedWaypoints = waypoints.map((waypoint) => ({
+    waypoint,
+    projected: projectGeoCoordinate(waypoint.coordinates || waypoint, radius, center, rotation)
+  }));
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(255, 232, 151, .5)';
+  ctx.lineWidth = Math.max(1.4, size * 0.0038);
+  ctx.setLineDash([Math.max(5, size * 0.014), Math.max(4, size * 0.01)]);
+  ctx.beginPath();
+  projectedWaypoints.forEach(({ projected }, index) => {
+    if (index === 0) ctx.moveTo(projected.x, projected.y);
+    else ctx.lineTo(projected.x, projected.y);
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  projectedWaypoints.forEach(({ waypoint, projected }) => {
+    const isActive = waypoint.id === journeyRoute.activeWaypointId;
+    const isNext = waypoint.id === journeyRoute.nextWaypointId;
+    const fade = projected.visible ? 1 : 0.22;
+    ctx.globalAlpha = fade * (isActive ? 0.92 : isNext ? 0.56 : 0.36);
+    ctx.fillStyle = isActive ? '#ffe897' : isNext ? 'rgba(255, 232, 151, .82)' : 'rgba(255,255,255,.5)';
+    ctx.strokeStyle = isActive ? 'rgba(32,209,143,.78)' : 'rgba(255,255,255,.34)';
+    ctx.lineWidth = Math.max(1, size * 0.0025);
+    ctx.beginPath();
+    ctx.arc(projected.x, projected.y, Math.max(isActive ? 6 : 4, size * (isActive ? 0.013 : 0.009)), 0, TWO_PI);
+    ctx.fill();
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloudTurn: 0, lightPhase: 0, framePulse: 1 }, activeCountryHighlight = null, journeyRoute = null) {
   const rect = canvas.getBoundingClientRect();
   const size = Math.max(1, Math.round(rect.width));
   const scale = window.devicePixelRatio || 1;
@@ -311,6 +351,7 @@ function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloud
   ctx.globalCompositeOperation = 'source-over';
 
   drawCountryHighlight(ctx, activeCountryHighlight, radius, center, rotation, size);
+  drawJourneyRoute(ctx, journeyRoute, radius, center, rotation, size);
 
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
@@ -413,7 +454,8 @@ export function RealEarthRenderer({
   activeLocationLabel = '',
   activeCountryHighlight = null,
   onUnavailable,
-  isTransitioning = false
+  isTransitioning = false,
+  journeyRoute = null
 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -552,7 +594,7 @@ export function RealEarthRenderer({
     };
     const renderStill = () => {
       const nextRotation = getInteractionRotation();
-      drawEarth(canvas, coordinates, nextRotation, stillMotion, activeCountryHighlight);
+      drawEarth(canvas, coordinates, nextRotation, stillMotion, activeCountryHighlight, journeyRoute);
       updateBeacon(nextRotation);
     };
     const renderFrame = (now) => {
@@ -605,7 +647,7 @@ export function RealEarthRenderer({
       const lightPhase = reducedMotion ? 0 : ((now - startedAt) / LIGHT_DRIFT_PERIOD_MS) * TWO_PI;
 
       const nextRotation = getInteractionRotation();
-      drawEarth(canvas, coordinates, nextRotation, { earthTurn, cloudTurn, lightPhase, framePulse }, activeCountryHighlight);
+      drawEarth(canvas, coordinates, nextRotation, { earthTurn, cloudTurn, lightPhase, framePulse }, activeCountryHighlight, journeyRoute);
       updateBeacon(nextRotation);
       animationRef.current = window.requestAnimationFrame(renderFrame);
     };
@@ -621,7 +663,7 @@ export function RealEarthRenderer({
       resizeObserver.disconnect();
       if (animationRef.current) window.cancelAnimationFrame(animationRef.current);
     };
-  }, [coordinates, activeCountryHighlight, baseRotation, reducedMotion, isTransitioning]);
+  }, [coordinates, activeCountryHighlight, journeyRoute, baseRotation, reducedMotion, isTransitioning]);
 
   const labelXDirection = projectedBeacon.x < 50 ? 1 : -1;
   const labelYDirection = projectedBeacon.y < 50 ? 1 : -1;

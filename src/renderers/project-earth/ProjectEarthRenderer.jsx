@@ -18,6 +18,7 @@ export default function ProjectEarthRenderer({
   activeLocationLabel = '',
   activeCountryHighlight = null,
   isTransitioning = false,
+  journeyRoute = null,
   className = ''
 }) {
   const rendererStyle = {
@@ -33,7 +34,7 @@ export default function ProjectEarthRenderer({
         <div className="orbit orbitOne" aria-hidden="true" />
         <div className="orbit orbitTwo" aria-hidden="true" />
         <div className="earthWrapper">
-          <EarthRenderer coordinates={coordinates} rotation={rotation} signalLabel={signalLabel} activeLocationLabel={activeLocationLabel} activeCountryHighlight={activeCountryHighlight} isTransitioning={isTransitioning} />
+          <EarthRenderer coordinates={coordinates} rotation={rotation} signalLabel={signalLabel} activeLocationLabel={activeLocationLabel} activeCountryHighlight={activeCountryHighlight} isTransitioning={isTransitioning} journeyRoute={journeyRoute} />
         </div>
       </div>
     </div>
