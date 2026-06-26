@@ -245,27 +245,46 @@ function drawJourneyRoute(ctx, journeyRoute, radius, center, rotation, size) {
   ctx.globalCompositeOperation = 'screen';
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = 'rgba(255, 232, 151, .5)';
-  ctx.lineWidth = Math.max(1.4, size * 0.0038);
-  ctx.setLineDash([Math.max(5, size * 0.014), Math.max(4, size * 0.01)]);
-  ctx.beginPath();
-  projectedWaypoints.forEach(({ projected }, index) => {
-    if (index === 0) ctx.moveTo(projected.x, projected.y);
-    else ctx.lineTo(projected.x, projected.y);
-  });
-  ctx.stroke();
+  const drawRouteArc = () => {
+    ctx.beginPath();
+    projectedWaypoints.forEach(({ projected }, index) => {
+      if (index === 0) {
+        ctx.moveTo(projected.x, projected.y);
+        return;
+      }
+
+      const previous = projectedWaypoints[index - 1].projected;
+      const controlX = (previous.x + projected.x) / 2;
+      const controlY = Math.min(previous.y, projected.y) - (size * 0.07);
+      ctx.quadraticCurveTo(controlX, controlY, projected.x, projected.y);
+    });
+    ctx.stroke();
+  };
+
+  ctx.strokeStyle = 'rgba(255, 232, 151, .22)';
+  ctx.lineWidth = Math.max(5, size * 0.014);
+  ctx.filter = `blur(${Math.max(1.2, size * 0.003)}px)`;
+  drawRouteArc();
+  ctx.filter = 'none';
+  ctx.strokeStyle = 'rgba(255, 239, 184, .86)';
+  ctx.lineWidth = Math.max(2, size * 0.0052);
+  drawRouteArc();
+  ctx.strokeStyle = 'rgba(32, 209, 143, .42)';
+  ctx.lineWidth = Math.max(0.9, size * 0.0022);
+  ctx.setLineDash([Math.max(6, size * 0.015), Math.max(5, size * 0.012)]);
+  drawRouteArc();
   ctx.setLineDash([]);
 
   projectedWaypoints.forEach(({ waypoint, projected }) => {
     const isActive = waypoint.id === journeyRoute.activeWaypointId;
     const isNext = waypoint.id === journeyRoute.nextWaypointId;
     const fade = projected.visible ? 1 : 0.22;
-    ctx.globalAlpha = fade * (isActive ? 0.92 : isNext ? 0.56 : 0.36);
-    ctx.fillStyle = isActive ? '#ffe897' : isNext ? 'rgba(255, 232, 151, .82)' : 'rgba(255,255,255,.5)';
-    ctx.strokeStyle = isActive ? 'rgba(32,209,143,.78)' : 'rgba(255,255,255,.34)';
+    ctx.globalAlpha = fade * (isActive ? 0.96 : isNext ? 0.72 : 0.36);
+    ctx.fillStyle = isActive ? '#ffe897' : isNext ? 'rgba(255, 244, 214, .86)' : 'rgba(255,255,255,.5)';
+    ctx.strokeStyle = isActive ? 'rgba(32,209,143,.82)' : isNext ? 'rgba(255,232,151,.58)' : 'rgba(255,255,255,.34)';
     ctx.lineWidth = Math.max(1, size * 0.0025);
     ctx.beginPath();
-    ctx.arc(projected.x, projected.y, Math.max(isActive ? 6 : 4, size * (isActive ? 0.013 : 0.009)), 0, TWO_PI);
+    ctx.arc(projected.x, projected.y, Math.max(isActive ? 6.5 : isNext ? 5.2 : 4, size * (isActive ? 0.014 : isNext ? 0.011 : 0.009)), 0, TWO_PI);
     ctx.fill();
     ctx.stroke();
   });

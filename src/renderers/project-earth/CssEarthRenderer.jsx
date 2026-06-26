@@ -14,14 +14,21 @@ function RouteOverlay({ journeyRoute, rotation }) {
     waypoint,
     projected: projectGeoCoordinate(waypoint.coordinates || waypoint, 50, 50, rotation)
   }));
-  const pathData = projectedWaypoints.map(({ projected }, index) => `${index === 0 ? 'M' : 'L'} ${projected.percent.x} ${projected.percent.y}`).join(' ');
+  const pathData = projectedWaypoints.reduce((path, { projected }, index) => {
+    if (index === 0) return `M ${projected.percent.x} ${projected.percent.y}`;
+
+    const previous = projectedWaypoints[index - 1].projected.percent;
+    const controlX = (previous.x + projected.percent.x) / 2;
+    const controlY = Math.min(previous.y, projected.percent.y) - 7;
+    return `${path} Q ${controlX} ${controlY} ${projected.percent.x} ${projected.percent.y}`;
+  }, '');
 
   return (
     <svg className="journeyRouteOverlay" viewBox="0 0 100 100" aria-hidden="true">
       <path className="journeyRoutePath" d={pathData} />
       {projectedWaypoints.map(({ waypoint, projected }) => {
         const state = waypoint.id === journeyRoute.activeWaypointId ? 'active' : waypoint.id === journeyRoute.nextWaypointId ? 'next' : 'idle';
-        return <circle key={waypoint.id} className="journeyWaypointMarker" data-state={state} cx={projected.percent.x} cy={projected.percent.y} r={state === 'active' ? 1.8 : 1.35} opacity={projected.visible ? 1 : 0.22} />;
+        return <circle key={waypoint.id} className="journeyWaypointMarker" data-state={state} cx={projected.percent.x} cy={projected.percent.y} r={state === 'active' ? 1.95 : state === 'next' ? 1.6 : 1.35} opacity={projected.visible ? 1 : 0.22} />;
       })}
     </svg>
   );
