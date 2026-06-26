@@ -11,12 +11,14 @@ function browserLanguageCodes(input = {}) {
 
 export function resolveScriptureLanguages(geoContext = {}, options = {}) {
   const countryCode = geoContext.countryCode || geoContext.isoCode;
+  const countryFlag = geoContext.flag || '';
+  const supportedLanguageCodes = geoContext.supportedLanguageCodes || [];
   const region = normalize(geoContext.region || geoContext.regionalGrouping);
   const browserCodes = browserLanguageCodes(options);
 
   const ranked = scriptureLanguages
     .map((language) => {
-      const countryMatch = language.countryCodes.includes(countryCode);
+      const countryMatch = supportedLanguageCodes.includes(language.languageCode) || language.countryCodes.includes(countryCode);
       const regionMatch = language.regionTags.some((tag) => region.includes(normalize(tag).replaceAll('-', ' ')) || normalize(tag).includes(region));
       const browserMatch = browserCodes.includes(language.languageCode);
       const availableTranslation = getAvailableTranslation(language);
@@ -30,6 +32,7 @@ export function resolveScriptureLanguages(geoContext = {}, options = {}) {
         ...language,
         score,
         isDetectedCountryMatch: countryMatch,
+        countryScope: countryMatch ? Object.freeze({ isoCode: countryCode, flag: countryFlag }) : null,
         isDetectedRegionMatch: regionMatch,
         isBrowserLanguageMatch: browserMatch,
         isAvailable: Boolean(availableTranslation),
