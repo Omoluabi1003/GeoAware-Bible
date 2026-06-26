@@ -232,7 +232,7 @@ function drawCountryHighlight(ctx, activeCountryHighlight, radius, center, rotat
   ctx.restore();
 }
 
-function drawJourneyRoute(ctx, journeyRoute, radius, center, rotation, size) {
+function drawJourneyRoute(ctx, journeyRoute, radius, center, rotation, size, motion) {
   const waypoints = journeyRoute?.waypoints || [];
   if (waypoints.length < 2) return;
 
@@ -241,39 +241,30 @@ function drawJourneyRoute(ctx, journeyRoute, radius, center, rotation, size) {
     projected: projectGeoCoordinate(waypoint.coordinates || waypoint, radius, center, rotation)
   }));
 
+  const activeWaypointIndex = Math.max(0, projectedWaypoints.findIndex(({ waypoint }) => waypoint.id === journeyRoute.activeWaypointId));
+  const activePulse = 0.86 + ((motion?.framePulse || 1) * 0.14);
+
   ctx.save();
   ctx.globalCompositeOperation = 'screen';
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  const drawRouteArc = () => {
+
+  projectedWaypoints.slice(1).forEach(({ projected }, index) => {
+    const previous = projectedWaypoints[index].projected;
+    const controlX = (previous.x + projected.x) / 2;
+    const controlY = Math.min(previous.y, projected.y) - (size * 0.07);
+    const isCompleted = index < activeWaypointIndex;
+    const isActiveSegment = index === activeWaypointIndex;
+
     ctx.beginPath();
-    projectedWaypoints.forEach(({ projected }, index) => {
-      if (index === 0) {
-        ctx.moveTo(projected.x, projected.y);
-        return;
-      }
-
-      const previous = projectedWaypoints[index - 1].projected;
-      const controlX = (previous.x + projected.x) / 2;
-      const controlY = Math.min(previous.y, projected.y) - (size * 0.07);
-      ctx.quadraticCurveTo(controlX, controlY, projected.x, projected.y);
-    });
+    ctx.moveTo(previous.x, previous.y);
+    ctx.quadraticCurveTo(controlX, controlY, projected.x, projected.y);
+    ctx.strokeStyle = isCompleted ? 'rgba(247, 215, 122, .84)' : isActiveSegment ? `rgba(255, 239, 184, ${0.82 * activePulse})` : 'rgba(204, 176, 103, .44)';
+    ctx.lineWidth = Math.max(isActiveSegment ? 3.2 : 2.4, size * (isActiveSegment ? 0.0072 : 0.0058));
+    ctx.filter = isActiveSegment ? `drop-shadow(0 0 ${Math.max(4, size * 0.012)}px rgba(255, 232, 151, .46))` : 'none';
     ctx.stroke();
-  };
-
-  ctx.strokeStyle = 'rgba(255, 232, 151, .22)';
-  ctx.lineWidth = Math.max(5, size * 0.014);
-  ctx.filter = `blur(${Math.max(1.2, size * 0.003)}px)`;
-  drawRouteArc();
+  });
   ctx.filter = 'none';
-  ctx.strokeStyle = 'rgba(255, 239, 184, .86)';
-  ctx.lineWidth = Math.max(2, size * 0.0052);
-  drawRouteArc();
-  ctx.strokeStyle = 'rgba(32, 209, 143, .42)';
-  ctx.lineWidth = Math.max(0.9, size * 0.0022);
-  ctx.setLineDash([Math.max(6, size * 0.015), Math.max(5, size * 0.012)]);
-  drawRouteArc();
-  ctx.setLineDash([]);
 
   projectedWaypoints.forEach(({ waypoint, projected }) => {
     const isActive = waypoint.id === journeyRoute.activeWaypointId;
@@ -370,7 +361,7 @@ function drawEarth(canvas, coordinates, rotation, motion = { earthTurn: 0, cloud
   ctx.globalCompositeOperation = 'source-over';
 
   drawCountryHighlight(ctx, activeCountryHighlight, radius, center, rotation, size);
-  drawJourneyRoute(ctx, journeyRoute, radius, center, rotation, size);
+  drawJourneyRoute(ctx, journeyRoute, radius, center, rotation, size, motion);
 
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
