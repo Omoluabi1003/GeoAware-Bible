@@ -333,7 +333,7 @@ export default function Home() {
           <div className="languageChips" aria-label="Scripture language recommendations">
             {languageRecommendations.slice(0, 5).map((language) => (
               <span key={language.languageCode} className={language.isAvailable ? 'available' : 'unavailable'} dir={language.direction}>
-                {language.nativeName} <em>{language.availabilityLabel}</em>
+                {language.countryScope?.flag ? <span aria-hidden="true">{language.countryScope.flag}</span> : null} {language.nativeName} <em>{language.availabilityLabel}</em>
               </span>
             ))}
           </div>
