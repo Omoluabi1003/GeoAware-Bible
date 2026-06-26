@@ -1,5 +1,11 @@
 import { getGeoNarrative, geoNarrativeList } from './journeyRegistry.js';
 
+const DEFAULT_GEONARRATIVE_ID = 'journey_to_bethlehem';
+
+function getDefaultGeoNarrative() {
+  return getGeoNarrative(DEFAULT_GEONARRATIVE_ID) || geoNarrativeList[0] || null;
+}
+
 function clampWaypointIndex(index, waypointCount) {
   if (waypointCount <= 0) return 0;
   if (!Number.isFinite(index)) return 0;
@@ -25,8 +31,9 @@ function buildSyncState(geoNarrative, waypoint) {
   });
 }
 
-export function createGeoNarrativeEngine({ geoNarrativeId = geoNarrativeList[0]?.id, journeyId = geoNarrativeId, waypointIndex = 0 } = {}) {
-  const geoNarrative = getGeoNarrative(journeyId) || geoNarrativeList[0] || null;
+export function createGeoNarrativeEngine({ geoNarrativeId = DEFAULT_GEONARRATIVE_ID, journeyId = geoNarrativeId, waypointIndex = 0 } = {}) {
+  const requestedGeoNarrative = getGeoNarrative(journeyId);
+  const geoNarrative = requestedGeoNarrative || getDefaultGeoNarrative();
   const waypoints = geoNarrative?.waypoints || Object.freeze([]);
   const currentIndex = clampWaypointIndex(waypointIndex, waypoints.length);
   const currentWaypoint = waypoints[currentIndex] || null;
