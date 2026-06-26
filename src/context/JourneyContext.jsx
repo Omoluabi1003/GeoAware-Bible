@@ -1,14 +1,14 @@
 'use client';
 
 import { createContext, useContext, useMemo, useState } from 'react';
-import { createJourneyEngine } from '../data/journeyEngine.js';
-import { JourneyRegistry, journeyList } from '../data/journeyRegistry.js';
+import { createGeoNarrativeEngine } from '../data/journeyEngine.js';
+import { GeoNarrativeRegistry, geoNarrativeList } from '../data/journeyRegistry.js';
 
 export const JourneyContext = createContext(Object.freeze({
-  registry: JourneyRegistry,
-  journeys: journeyList,
-  engine: createJourneyEngine(),
-  selectedJourneyId: journeyList[0]?.id || null,
+  registry: GeoNarrativeRegistry,
+  journeys: geoNarrativeList,
+  engine: createGeoNarrativeEngine(),
+  selectedJourneyId: geoNarrativeList[0]?.id || null,
   waypointIndex: 0,
   selectJourney: () => {},
   goToWaypoint: () => {},
@@ -16,17 +16,17 @@ export const JourneyContext = createContext(Object.freeze({
   goToPrevious: () => {}
 }));
 
-export function JourneyProvider({ initialJourneyId = journeyList[0]?.id, initialWaypointIndex = 0, children }) {
+export function JourneyProvider({ initialJourneyId = geoNarrativeList[0]?.id, initialWaypointIndex = 0, children }) {
   const [selectedJourneyId, setSelectedJourneyId] = useState(initialJourneyId);
   const [waypointIndex, setWaypointIndex] = useState(initialWaypointIndex);
-  const engine = useMemo(() => createJourneyEngine({
+  const engine = useMemo(() => createGeoNarrativeEngine({
     journeyId: selectedJourneyId,
     waypointIndex
   }), [selectedJourneyId, waypointIndex]);
 
   const value = useMemo(() => Object.freeze({
-    registry: JourneyRegistry,
-    journeys: journeyList,
+    registry: GeoNarrativeRegistry,
+    journeys: geoNarrativeList,
     engine,
     selectedJourneyId: engine.journeyId,
     waypointIndex: engine.waypointIndex,

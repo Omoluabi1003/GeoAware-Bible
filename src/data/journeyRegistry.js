@@ -1,4 +1,4 @@
-export const JOURNEY_SYNC_CHANNELS = Object.freeze({
+export const GEONARRATIVE_SYNC_CHANNELS = Object.freeze({
   narration: 'narration',
   globeCamera: 'globeCamera',
   beacon: 'beacon'
@@ -20,26 +20,39 @@ function freezeWaypoint(waypoint) {
   });
 }
 
-function freezeJourney(journey) {
-  const waypoints = [...journey.waypoints]
+function freezeGeoNarrative(geoNarrative) {
+  const waypoints = [...geoNarrative.waypoints]
     .sort((a, b) => a.sequence - b.sequence)
     .map(freezeWaypoint);
 
   return Object.freeze({
-    ...journey,
-    scriptureRefs: Object.freeze([...(journey.scriptureRefs || [])]),
-    futureSyncChannels: Object.freeze([...(journey.futureSyncChannels || Object.values(JOURNEY_SYNC_CHANNELS))]),
+    ...geoNarrative,
+    summary: geoNarrative.summary || geoNarrative.description || '',
+    description: geoNarrative.description || geoNarrative.summary || '',
+    scriptureRefs: Object.freeze([...(geoNarrative.scriptureRefs || [])]),
+    routeMetadata: Object.freeze({ ...(geoNarrative.routeMetadata || {}) }),
+    narration: Object.freeze({ status: 'placeholder', audioReady: false, ...(geoNarrative.narration || {}) }),
+    languageHooks: Object.freeze({ ...(geoNarrative.languageHooks || {}) }),
+    completionState: Object.freeze({
+      status: geoNarrative.completionState?.status || 'not_started',
+      completedWaypointIds: Object.freeze([...(geoNarrative.completionState?.completedWaypointIds || [])])
+    }),
+    futureSyncChannels: Object.freeze([...(geoNarrative.futureSyncChannels || Object.values(GEONARRATIVE_SYNC_CHANNELS))]),
     waypoints: Object.freeze(waypoints)
   });
 }
 
-export const JourneyRegistry = Object.freeze({
-  journey_to_bethlehem: freezeJourney({
+export const GeoNarrativeRegistry = Object.freeze({
+  journey_to_bethlehem: freezeGeoNarrative({
     id: 'journey_to_bethlehem',
     title: 'Journey to Bethlehem',
-    description: 'A historically cautious route from Nazareth toward Bethlehem, with intermediate stops shown as approximate travel context rather than certain biblical event locations.',
+    summary: 'A historically cautious route from Nazareth toward Bethlehem, with intermediate stops shown as approximate travel context rather than certain biblical event locations.',
     scriptureRefs: ['Luke 2:1-7'],
-    futureSyncChannels: Object.values(JOURNEY_SYNC_CHANNELS),
+    routeMetadata: { routeType: 'overland', certainty: 'approximate_contextual_route', activeByDefault: true },
+    narration: { status: 'placeholder', cuePrefix: 'journey_to_bethlehem', audioReady: false },
+    languageHooks: { titleKey: 'geonarrative.journey_to_bethlehem.title', summaryKey: 'geonarrative.journey_to_bethlehem.summary' },
+    completionState: { status: 'available', completedWaypointIds: [] },
+    futureSyncChannels: Object.values(GEONARRATIVE_SYNC_CHANNELS),
     waypoints: [
       {
         id: 'nazareth',
@@ -123,12 +136,16 @@ export const JourneyRegistry = Object.freeze({
       }
     ]
   }),
-  paul_first_missionary_journey: freezeJourney({
+  paul_first_missionary_journey: freezeGeoNarrative({
     id: 'paul_first_missionary_journey',
     title: "Paul's First Missionary Journey",
-    description: 'The Acts 13-14 route from Antioch through Cyprus and southern Galatia before returning to Antioch.',
+    summary: 'The Acts 13-14 route from Antioch through Cyprus and southern Galatia before returning to Antioch.',
     scriptureRefs: ['Acts 13:1-14:28'],
-    futureSyncChannels: Object.values(JOURNEY_SYNC_CHANNELS),
+    routeMetadata: { routeType: 'mixed_land_sea', certainty: 'scripture_attested_ordered_route', activeByDefault: false },
+    narration: { status: 'placeholder', cuePrefix: 'paul_first', audioReady: false },
+    languageHooks: { titleKey: 'geonarrative.paul_first_missionary_journey.title', summaryKey: 'geonarrative.paul_first_missionary_journey.summary' },
+    completionState: { status: 'registered_inactive', completedWaypointIds: [] },
+    futureSyncChannels: Object.values(GEONARRATIVE_SYNC_CHANNELS),
     waypoints: [
       { id: 'antioch_syria_departure', latitude: 36.2021, longitude: 36.1613, title: 'Antioch', scriptureRefs: ['Acts 13:1-3'], sequence: 1, historicalSummary: 'The church at Antioch sends Barnabas and Saul after prayer and fasting.', estimatedTravelDuration: '1 day to Seleucia', synchronization: { narrationCueId: 'paul_first.antioch_departure', globeCameraCueId: 'camera.antioch_syria', beaconCueId: 'beacon.antioch_syria' } },
       { id: 'seleucia_pieria', latitude: 36.1241, longitude: 35.9227, title: 'Seleucia', scriptureRefs: ['Acts 13:4'], sequence: 2, historicalSummary: 'Seleucia Pieria was Antioch’s Mediterranean port, where the mission sailed toward Cyprus.', estimatedTravelDuration: 'Sea crossing to Salamis', synchronization: { narrationCueId: 'paul_first.seleucia', globeCameraCueId: 'camera.seleucia', beaconCueId: 'beacon.seleucia' } },
@@ -144,8 +161,16 @@ export const JourneyRegistry = Object.freeze({
   })
 });
 
-export const journeyList = Object.freeze(Object.values(JourneyRegistry));
+export const geoNarrativeList = Object.freeze(Object.values(GeoNarrativeRegistry));
+
+export function getGeoNarrative(geoNarrativeId) {
+  return GeoNarrativeRegistry[geoNarrativeId] || null;
+}
+
+export const JourneyRegistry = GeoNarrativeRegistry;
+export const journeyList = geoNarrativeList;
+export const JOURNEY_SYNC_CHANNELS = GEONARRATIVE_SYNC_CHANNELS;
 
 export function getJourney(journeyId) {
-  return JourneyRegistry[journeyId] || null;
+  return getGeoNarrative(journeyId);
 }
