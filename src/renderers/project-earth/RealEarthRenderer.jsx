@@ -480,7 +480,7 @@ export function RealEarthRenderer({
       const dy = event.clientY - interaction.lastY;
       const dt = Math.max(8, now - interaction.lastTime);
       const yawTurn = dx * DRAG_DEGREES_PER_PIXEL;
-      const pitchTurn = dy * DRAG_DEGREES_PER_PIXEL;
+      const pitchTurn = -dy * DRAG_DEGREES_PER_PIXEL;
       const nextPitchOffset = clamp(
         interaction.rotationOffset.x + pitchTurn,
         MIN_PITCH_DEGREES - baseRotation.x,
