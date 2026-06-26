@@ -37,7 +37,7 @@ export const JourneyRegistry = Object.freeze({
   journey_to_bethlehem: freezeJourney({
     id: 'journey_to_bethlehem',
     title: 'Journey to Bethlehem',
-    description: 'The ordered journey from Nazareth to Bethlehem in the nativity account.',
+    description: 'A historically cautious route from Nazareth toward Bethlehem, with intermediate stops shown as approximate travel context rather than certain biblical event locations.',
     scriptureRefs: ['Luke 2:1-7'],
     futureSyncChannels: Object.values(JOURNEY_SYNC_CHANNELS),
     waypoints: [
@@ -48,12 +48,61 @@ export const JourneyRegistry = Object.freeze({
         title: 'Nazareth',
         scriptureRefs: ['Luke 2:1-5'],
         sequence: 1,
-        historicalSummary: 'Joseph and Mary begin their journey.',
-        estimatedTravelDuration: '4-7 days on foot',
+        waypointRole: 'primary_scripture_event',
+        historicalSummary: 'Joseph and Mary begin in Nazareth, the named departure setting in Luke’s nativity account.',
+        estimatedTravelDuration: 'Approximate multi-day journey south',
         synchronization: {
           narrationCueId: 'journey_to_bethlehem.nazareth',
           globeCameraCueId: 'camera.nazareth',
           beaconCueId: 'beacon.nazareth'
+        }
+      },
+      {
+        id: 'jezreel_valley_corridor',
+        latitude: 32.5667,
+        longitude: 35.2350,
+        title: 'Jezreel Valley corridor',
+        waypointRole: 'route_context',
+        scriptureRefs: ['Route context'],
+        sequence: 2,
+        historicalSummary: 'Approximate travel context: a southbound route could pass from Galilee toward the Jezreel Valley, trading hill-country paths for broader valley corridors before continuing toward Judea.',
+        estimatedTravelDuration: 'Terrain corridor between Galilee and central highlands',
+        synchronization: {
+          narrationCueId: 'journey_to_bethlehem.jezreel_valley_context',
+          globeCameraCueId: 'camera.jezreel_valley',
+          beaconCueId: 'beacon.jezreel_valley_context'
+        }
+      },
+      {
+        id: 'samaria_judea_approach',
+        latitude: 32.0750,
+        longitude: 35.2400,
+        title: 'Samaria/Judea approach',
+        waypointRole: 'route_context',
+        scriptureRefs: ['Route context'],
+        sequence: 3,
+        historicalSummary: 'Approximate travel context: the middle leg is shown cautiously as a central highlands approach, where distance, elevation changes, and village-to-village travel would shape the pilgrimage pace.',
+        estimatedTravelDuration: 'Several days of overland walking context',
+        synchronization: {
+          narrationCueId: 'journey_to_bethlehem.samaria_judea_context',
+          globeCameraCueId: 'camera.samaria_judea',
+          beaconCueId: 'beacon.samaria_judea_context'
+        }
+      },
+      {
+        id: 'jerusalem_vicinity',
+        latitude: 31.7683,
+        longitude: 35.2137,
+        title: 'Jerusalem vicinity',
+        waypointRole: 'route_context',
+        scriptureRefs: ['Route context'],
+        sequence: 4,
+        historicalSummary: 'Approximate travel context: nearing Jerusalem places the route close to Judea’s hill country before the final short descent and approach southward to Bethlehem.',
+        estimatedTravelDuration: 'Final regional approach before Bethlehem',
+        synchronization: {
+          narrationCueId: 'journey_to_bethlehem.jerusalem_vicinity_context',
+          globeCameraCueId: 'camera.jerusalem_vicinity',
+          beaconCueId: 'beacon.jerusalem_vicinity_context'
         }
       },
       {
@@ -62,8 +111,9 @@ export const JourneyRegistry = Object.freeze({
         longitude: 35.2024,
         title: 'Bethlehem',
         scriptureRefs: ['Luke 2:6-7'],
-        sequence: 2,
-        historicalSummary: 'Jesus is born in Bethlehem.',
+        sequence: 5,
+        waypointRole: 'primary_scripture_event',
+        historicalSummary: 'Bethlehem is the named destination where Luke records Jesus’ birth after the journey.',
         estimatedTravelDuration: null,
         synchronization: {
           narrationCueId: 'journey_to_bethlehem.bethlehem',
