@@ -1,4 +1,17 @@
-import { defaultProfile, languageProfiles } from './languageProfiles.js';
+import { defaultProfile, getProfileByCountryCode, languageProfiles } from './languageProfiles.js';
+
+const FUTURE_CONTEXT_HOOKS = Object.freeze({
+  localHistoricalContext: null,
+  biblicalGeographyRelevance: null,
+  nearbyChurches: null,
+  nearbyArchaeologicalSites: null,
+  nearbyChristianMuseums: null,
+  nearbySeminaries: null,
+  nearbyBibleStudyGroups: null,
+  nearbyChristianRadioStations: null,
+  nearbyChristianEvents: null,
+  nearbyMissionaryOrganizations: null
+});
 
 const countryContextModels = {
   US: {
@@ -10,11 +23,8 @@ const countryContextModels = {
     timezone: 'America/New_York',
     hemisphere: { latitudinal: 'Northern', longitudinal: 'Western' },
     regionalGrouping: 'North America',
-    futureMetadata: {
-      biblicalHistory: null,
-      archaeology: null,
-      culturalContext: null
-    }
+    bounds: { minLatitude: 24.3, maxLatitude: 49.5, minLongitude: -125, maxLongitude: -66.8 },
+    futureMetadata: FUTURE_CONTEXT_HOOKS
   },
   NG: {
     isoCode: 'NG',
@@ -25,11 +35,8 @@ const countryContextModels = {
     timezone: 'Africa/Lagos',
     hemisphere: { latitudinal: 'Northern', longitudinal: 'Eastern' },
     regionalGrouping: 'West Africa',
-    futureMetadata: {
-      biblicalHistory: null,
-      archaeology: null,
-      culturalContext: null
-    }
+    bounds: { minLatitude: 4.2, maxLatitude: 13.9, minLongitude: 2.6, maxLongitude: 14.7 },
+    futureMetadata: FUTURE_CONTEXT_HOOKS
   },
   BR: {
     isoCode: 'BR',
@@ -40,11 +47,8 @@ const countryContextModels = {
     timezone: 'America/Sao_Paulo',
     hemisphere: { latitudinal: 'Southern', longitudinal: 'Western' },
     regionalGrouping: 'South America',
-    futureMetadata: {
-      biblicalHistory: null,
-      archaeology: null,
-      culturalContext: null
-    }
+    bounds: { minLatitude: -33.8, maxLatitude: 5.4, minLongitude: -74, maxLongitude: -34.7 },
+    futureMetadata: FUTURE_CONTEXT_HOOKS
   },
   KE: {
     isoCode: 'KE',
@@ -55,11 +59,8 @@ const countryContextModels = {
     timezone: 'Africa/Nairobi',
     hemisphere: { latitudinal: 'Equatorial', longitudinal: 'Eastern' },
     regionalGrouping: 'East Africa',
-    futureMetadata: {
-      biblicalHistory: null,
-      archaeology: null,
-      culturalContext: null
-    }
+    bounds: { minLatitude: -4.8, maxLatitude: 5.3, minLongitude: 33.9, maxLongitude: 41.9 },
+    futureMetadata: FUTURE_CONTEXT_HOOKS
   },
   FR: {
     isoCode: 'FR',
@@ -70,11 +71,8 @@ const countryContextModels = {
     timezone: 'Europe/Paris',
     hemisphere: { latitudinal: 'Northern', longitudinal: 'Eastern' },
     regionalGrouping: 'Western Europe',
-    futureMetadata: {
-      biblicalHistory: null,
-      archaeology: null,
-      culturalContext: null
-    }
+    bounds: { minLatitude: 41.3, maxLatitude: 51.2, minLongitude: -5.2, maxLongitude: 9.7 },
+    futureMetadata: FUTURE_CONTEXT_HOOKS
   },
   JP: {
     isoCode: 'JP',
@@ -85,11 +83,8 @@ const countryContextModels = {
     timezone: 'Asia/Tokyo',
     hemisphere: { latitudinal: 'Northern', longitudinal: 'Eastern' },
     regionalGrouping: 'East Asia',
-    futureMetadata: {
-      biblicalHistory: null,
-      archaeology: null,
-      culturalContext: null
-    }
+    bounds: { minLatitude: 24, maxLatitude: 46, minLongitude: 122, maxLongitude: 146 },
+    futureMetadata: FUTURE_CONTEXT_HOOKS
   }
 };
 
@@ -97,6 +92,22 @@ const geoContextCache = new Map();
 
 function normalizeCountryCode(countryCode) {
   return countryCode?.toUpperCase?.() || defaultProfile.countryCode || 'US';
+}
+
+function coordinatesInBounds(coordinates, bounds) {
+  if (!coordinates || !bounds) return false;
+  const { latitude, longitude } = coordinates;
+  return typeof latitude === 'number'
+    && typeof longitude === 'number'
+    && latitude >= bounds.minLatitude
+    && latitude <= bounds.maxLatitude
+    && longitude >= bounds.minLongitude
+    && longitude <= bounds.maxLongitude;
+}
+
+export function inferCountryCodeFromCoordinates(coordinates) {
+  const match = Object.entries(countryContextModels).find(([, model]) => coordinatesInBounds(coordinates, model.bounds));
+  return match?.[0] || null;
 }
 
 function buildGeoContext(countryCode) {
@@ -122,6 +133,41 @@ export function getGeoContext(countryCode) {
   }
 
   return geoContextCache.get(cacheKey);
+}
+
+export function resolveGeoContext(input = {}) {
+  const inferredCode = input.locality?.countryCode
+    || inferCountryCodeFromCoordinates(input.coordinates)
+    || input.countryCode
+    || 'US';
+  const profile = getProfileByCountryCode(inferredCode);
+  const model = getGeoContext(inferredCode);
+  const city = input.locality?.city || profile.city;
+  const region = input.locality?.region || profile.state || model.region;
+  const country = input.locality?.country || profile.country || model.country;
+  const recommendedTranslationId = profile.translationId || defaultProfile.translationId;
+  const effectiveTranslationId = input.stayInEnglish ? 'web' : recommendedTranslationId;
+  const recommendedLanguage = profile.primaryLanguage || model.primaryLanguage;
+  const effectiveLanguage = input.stayInEnglish ? 'English' : recommendedLanguage;
+  const languageRegionLabel = profile.languageCode === 'en' ? ` (${model.isoCode})` : '';
+
+  return Object.freeze({
+    ...model,
+    countryCode: model.isoCode,
+    city,
+    stateOrProvince: region,
+    country,
+    preferredLanguage: recommendedLanguage,
+    preferredLanguageCode: profile.languageCode || model.languageCode,
+    recommendedTranslationId,
+    effectiveTranslationId,
+    effectiveLanguage,
+    isEnglishOverride: Boolean(input.stayInEnglish),
+    coordinates: Object.freeze(input.coordinates || profile.coordinates || model.coordinates),
+    source: input.locality?.countryCode ? 'reverse-geocode' : input.coordinates ? 'coordinates' : 'profile',
+    summary: `Detected: ${[city, region].filter(Boolean).join(', ') || country} • ${recommendedLanguage}${languageRegionLabel} recommended`,
+    futureContextHooks: model.contextMetadata
+  });
 }
 
 export function getGeoContextModel(countryCode) {
