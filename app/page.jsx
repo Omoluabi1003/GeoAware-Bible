@@ -368,10 +368,31 @@ function HomeContent({ walkTheWord }) {
           journeyRoute={walkJourneyRoute}
         />
 
-        <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
-          <h2><span aria-hidden="true">{profile.flag}</span> {locationLabel}</h2>
-          <small aria-live="polite" aria-atomic="true">{walkTheWord.isActive && walkWaypoint ? `${walkWaypoint.scriptureRefs[0]} · paused at waypoint` : locationError || (arrivalStep === 'ready' ? 'Scripture is ready for your journey' : arrivalMessage)}</small>
-        </div>
+        {walkTheWord.isActive && walkWaypoint ? (
+          <div className="locationCard walkWaypointCard" aria-label="Active Walk the Word waypoint">
+            <div className="walkWaypointCardHeader">
+              <span>Waypoint {walkTheWord.engine.waypointIndex + 1} of {walkTheWord.engine.waypointCount}</span>
+              <small>{walkWaypoint.scriptureRefs[0]}</small>
+            </div>
+            <h2>{walkWaypoint.title}</h2>
+            <p>{walkWaypoint.historicalSummary}</p>
+            <div className="walkControls" aria-label="Walk the Word controls">
+              <div className="walkWaypointSummary">
+                {walkTheWord.nextWaypoint ? (
+                  <strong>Next: {walkTheWord.nextWaypoint.title} · {walkTheWord.nextWaypoint.scriptureRefs[0]}</strong>
+                ) : (
+                  <strong>{walkWaypoint.title} complete · {walkWaypoint.scriptureRefs[0]}</strong>
+                )}
+              </div>
+              <button type="button" onClick={walkTheWord.continue}>{walkTheWord.engine.canMoveNext ? 'Continue Journey' : 'Finish Journey'}</button>
+            </div>
+          </div>
+        ) : (
+          <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
+            <h2><span aria-hidden="true">{profile.flag}</span> {locationLabel}</h2>
+            <small aria-live="polite" aria-atomic="true">{locationError || (arrivalStep === 'ready' ? 'Scripture is ready for your journey' : arrivalMessage)}</small>
+          </div>
+        )}
       </section>
 
       <section className="countryRail" aria-label="Choose a Scripture language by place">
@@ -397,19 +418,6 @@ function HomeContent({ walkTheWord }) {
             <small>{displayedReference}</small>
             <p>{displayedText}</p>
           </div>
-          {walkTheWord.isActive && walkWaypoint ? (
-            <div className="walkControls" aria-label="Walk the Word controls">
-              <div className="walkWaypointSummary">
-                <span>Waypoint {walkTheWord.engine.waypointIndex + 1} of {walkTheWord.engine.waypointCount}</span>
-                {walkTheWord.nextWaypoint ? (
-                  <strong>Next: {walkTheWord.nextWaypoint.title} · {walkTheWord.nextWaypoint.scriptureRefs[0]}</strong>
-                ) : (
-                  <strong>{walkWaypoint.title} complete · {walkWaypoint.scriptureRefs[0]}</strong>
-                )}
-              </div>
-              <button type="button" onClick={walkTheWord.continue}>{walkTheWord.engine.canMoveNext ? 'Continue Journey' : 'Finish Journey'}</button>
-            </div>
-          ) : null}
           <div className="readerMeta">
             <strong>{activeTranslation.name}</strong>
             <span>{activeTranslation.license}</span>
