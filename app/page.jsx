@@ -248,7 +248,7 @@ function HomeContent() {
           setHasLocationPermissionResponse(true);
           setDetectedCoordinates(null);
           setDetectedLocality(null);
-          setLocationError('Location permission is blocked. Enable location in your browser settings, then tap Follow My Location again.');
+          setLocationError('Location permission is blocked. Enable location in your browser settings, then choose Read Near Me again.');
           return Promise.reject(new DOMException('Location permission denied.', 'AbortError'));
         }
 
@@ -274,7 +274,7 @@ function HomeContent() {
         setDetectedLocality(null);
         storeLocationPermissionResponse();
         setHasLocationPermissionResponse(true);
-        setLocationError(error?.code === 1 ? 'Location permission denied. Enable location in your browser settings, then tap Follow My Location again.' : 'Precise location unavailable; using country profile fallback.');
+        setLocationError(error?.code === 1 ? 'Location permission denied. Enable location in your browser settings, then choose Read Near Me again.' : 'Precise location unavailable; using country profile fallback.');
       });
 
     return () => {
@@ -326,6 +326,10 @@ function HomeContent() {
     };
   }, [targetEarthCamera, reducedMotion]);
 
+  const scriptureLocationSummary = GeoContext.isEnglishOverride
+    ? `Reading in English while journeying through ${GeoContext.country}.`
+    : `Reading ${GeoContext.effectiveLanguage} Scripture with ${GeoContext.country} in view.`;
+
   return (
     <main className="pageShell">
       <section className="topNav">
@@ -335,16 +339,16 @@ function HomeContent() {
       <section className="heroGrid">
         <div className="heroCopy">
           <h1>God's Word. Wherever you are.</h1>
-          <div className="modeSwitch" aria-label="Geo mode selector">
-            <button className={mode === 'geo' ? 'active' : ''} onClick={requestLocationFollow}><MapPin size={16} /> Follow My Location</button>
-            <button className={mode === 'fixed' ? 'active' : ''} onClick={() => setMode('fixed')}><BookOpen size={16} /> Stay In English</button>
+          <div className="modeSwitch" aria-label="Scripture journey choices">
+            <button className={mode === 'geo' ? 'active' : ''} onClick={requestLocationFollow}><MapPin size={16} /> Read Near Me</button>
+            <button className={mode === 'fixed' ? 'active' : ''} onClick={() => setMode('fixed')}><BookOpen size={16} /> Read in English</button>
           </div>
         </div>
 
         <ProjectEarthRenderer
           coordinates={earthCamera.coordinates}
           rotation={earthCamera.rotation}
-          signalLabel={`${GeoContext.country} signal`}
+          signalLabel={`${GeoContext.country} Scripture setting`}
           activeLocationLabel={locationLabel}
           activeCountryHighlight={profile.countryHighlight}
           isTransitioning={isCameraTransitioning}
@@ -352,11 +356,11 @@ function HomeContent() {
 
         <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
           <h2><span aria-hidden="true">{profile.flag}</span> {locationLabel}</h2>
-          <small aria-live="polite" aria-atomic="true">{locationError || (arrivalStep === 'ready' ? 'Scripture ready' : arrivalMessage)}</small>
+          <small aria-live="polite" aria-atomic="true">{locationError || (arrivalStep === 'ready' ? 'Scripture is ready for your journey' : arrivalMessage)}</small>
         </div>
       </section>
 
-      <section className="countryRail" aria-label="Country quick switcher">
+      <section className="countryRail" aria-label="Choose a Scripture language by place">
         {countries.map(([code, item]) => (
           <button key={code} className={countryCode === code ? 'selected' : ''} onClick={() => { setCountryCode(code); setDetectedCoordinates(null); setDetectedLocality(null); setLocationError(''); }} aria-label={`${item.country}, ${item.primaryLanguage}`}>
             <span aria-hidden="true">{item.flag}</span>
@@ -369,11 +373,11 @@ function HomeContent() {
       <section className="contentGrid">
         <article className={`readerPanel glassPanel ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
           <div className="panelHeader">
-            <p className="eyebrow"><Languages size={15} /> Scripture Reader</p>
+            <p className="eyebrow"><Languages size={15} /> Today’s reading</p>
             <span>{activeTranslation.language}</span>
           </div>
           <div className="geoContextSummary" aria-live="polite">
-            {GeoContext.summary}{GeoContext.isEnglishOverride ? ' • English override on' : ''}
+            {scriptureLocationSummary}
           </div>
           <div className={`verseBox ${activeTranslation.availability?.status === 'unavailable' ? 'unavailable' : ''}`}>
             <small>{activeTranslation.reference}</small>
@@ -384,7 +388,7 @@ function HomeContent() {
             <span>{activeTranslation.license}</span>
             <span>{activeTranslation.licenseSource}</span>
           </div>
-          <div className="languageChips" aria-label="Scripture language recommendations">
+          <div className="languageChips" aria-label="Scripture language choices">
             {languageRecommendations.slice(0, 5).map((language) => (
               <span key={language.languageCode} className={language.isAvailable ? 'available' : 'unavailable'} dir={language.direction}>
                 {language.countryScope?.flag ? <span aria-hidden="true">{language.countryScope.flag}</span> : null} {language.nativeName} <em>{language.availabilityLabel}</em>
@@ -394,15 +398,15 @@ function HomeContent() {
         </article>
 
         <aside className="passport glassPanel">
-          <p className="eyebrow"><Plane size={15} /> Scripture Passport</p>
-          <h2>My Scripture Journey</h2>
+          <p className="eyebrow"><Plane size={15} /> Pilgrim passport</p>
+          <h2>Your Scripture journey</h2>
           <div className="statGrid">
             {journeyStats.map(([label, value]) => (
               <div key={label}><strong>{value}</strong><span>{label}</span></div>
             ))}
           </div>
           <div className="prayerCard">
-            <small>GeoPrayer</small>
+            <small>Prayer for the road</small>
             <p>{geoScripture.PrayerPrompt}</p>
           </div>
         </aside>
@@ -412,7 +416,7 @@ function HomeContent() {
         <div className="featureIcon"><Globe2 /></div>
         <div>
           <p className="eyebrow">Why GeoAware Bible</p>
-          <h3>Scripture follows place.</h3>
+          <h3>Read the Word with a sense of place.</h3>
           <p>{geoScripture.GeoInsight}</p>
         </div>
       </section>
