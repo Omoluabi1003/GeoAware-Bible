@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, Globe2, Languages, MapPin, Plane } from 'lucide-react';
-import { getGeoContext } from '../src/data/geoContext.js';
+import { resolveGeoContext } from '../src/data/geoContext.js';
 import { buildGeoScriptureContext } from '../src/data/geoscriptureEngine.js';
 import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
@@ -147,10 +147,15 @@ export default function Home() {
   const [detectedLocality, setDetectedLocality] = useState(null);
   const [locationError, setLocationError] = useState('');
   const [locationRequestKey, setLocationRequestKey] = useState(0);
-  const profile = languageProfiles[countryCode] || languageProfiles.US;
-  const GeoContext = useMemo(() => getGeoContext(countryCode), [countryCode]);
   const activeDetectedCoordinates = mode === 'geo' ? detectedCoordinates : null;
   const activeDetectedLocality = mode === 'geo' ? detectedLocality : null;
+  const GeoContext = useMemo(() => resolveGeoContext({
+    countryCode,
+    coordinates: activeDetectedCoordinates,
+    locality: activeDetectedLocality,
+    stayInEnglish: mode === 'fixed'
+  }), [countryCode, activeDetectedCoordinates, activeDetectedLocality, mode]);
+  const profile = languageProfiles[GeoContext.countryCode] || languageProfiles.US;
   const targetEarthCamera = useMemo(() => resolveEarthCamera(profile, activeDetectedCoordinates), [profile, activeDetectedCoordinates]);
   const animationFrameRef = useRef(null);
   const cameraRef = useRef(targetEarthCamera);
@@ -158,18 +163,18 @@ export default function Home() {
   const [isCameraTransitioning, setIsCameraTransitioning] = useState(false);
   const reducedMotion = useReducedMotion();
   const activeTranslation = useMemo(() => (
-    mode === 'fixed' ? getTranslation('web') : getTranslation(profile.translationId)
-  ), [mode, profile.translationId]);
+    getTranslation(GeoContext.effectiveTranslationId)
+  ), [GeoContext.effectiveTranslationId]);
   const geoScripture = useMemo(() => buildGeoScriptureContext({
     latitude: activeDetectedCoordinates?.latitude ?? profile.coordinates?.latitude,
     longitude: activeDetectedCoordinates?.longitude ?? profile.coordinates?.longitude,
-    country: activeDetectedLocality?.country || GeoContext.country,
-    region: activeDetectedLocality?.region || GeoContext.region,
-    locality: activeDetectedLocality?.city || profile.city,
-    language: activeTranslation.language,
+    country: GeoContext.country,
+    region: GeoContext.stateOrProvince,
+    locality: GeoContext.city,
+    language: GeoContext.effectiveLanguage,
     date: new Date(),
     currentScripture: activeTranslation
-  }), [activeDetectedCoordinates, activeDetectedLocality, activeTranslation, GeoContext, profile]);
+  }), [activeDetectedCoordinates, activeTranslation, GeoContext, profile]);
   const alternateLanguages = useMemo(() => (
     [...new Set(profile.alternates || [])]
       .filter((language) => language !== profile.primaryLanguage)
@@ -183,7 +188,7 @@ export default function Home() {
       ? `${profile.flag} ${locationLabel} recognized`
       : arrivalStep === 'preparing'
         ? `Preparing Scripture for ${locationLabel}`
-        : `Scripture ready in ${mode === 'fixed' ? 'English' : profile.primaryLanguage}`;
+        : `Scripture ready in ${GeoContext.effectiveLanguage}`;
 
   useEffect(() => {
     setArrivalStep('finding');
@@ -286,7 +291,7 @@ export default function Home() {
         <ProjectEarthRenderer
           coordinates={earthCamera.coordinates}
           rotation={earthCamera.rotation}
-          signalLabel={`${activeDetectedLocality?.country || GeoContext.country} signal`}
+          signalLabel={`${GeoContext.country} signal`}
           activeLocationLabel={locationLabel}
           activeCountryHighlight={profile.countryHighlight}
           isTransitioning={isCameraTransitioning}
@@ -313,6 +318,9 @@ export default function Home() {
           <div className="panelHeader">
             <p className="eyebrow"><Languages size={15} /> Scripture Reader</p>
             <span>{activeTranslation.language}</span>
+          </div>
+          <div className="geoContextSummary" aria-live="polite">
+            {GeoContext.summary}{GeoContext.isEnglishOverride ? ' • English override on' : ''}
           </div>
           <div className="verseBox">
             <small>{activeTranslation.reference}</small>
