@@ -14,18 +14,26 @@ function RouteOverlay({ journeyRoute, rotation }) {
     waypoint,
     projected: projectGeoCoordinate(waypoint.coordinates || waypoint, 50, 50, rotation)
   }));
-  const pathData = projectedWaypoints.reduce((path, { projected }, index) => {
-    if (index === 0) return `M ${projected.percent.x} ${projected.percent.y}`;
+  const activeWaypointIndex = Math.max(0, projectedWaypoints.findIndex(({ waypoint }) => waypoint.id === journeyRoute.activeWaypointId));
+  const routeSegments = projectedWaypoints.slice(1).map(({ projected }, index) => {
+    const previous = projectedWaypoints[index].projected.percent;
+    const current = projected.percent;
+    const controlX = (previous.x + current.x) / 2;
+    const controlY = Math.min(previous.y, current.y) - 7;
+    const state = index < activeWaypointIndex ? 'completed' : index === activeWaypointIndex ? 'active' : 'upcoming';
 
-    const previous = projectedWaypoints[index - 1].projected.percent;
-    const controlX = (previous.x + projected.percent.x) / 2;
-    const controlY = Math.min(previous.y, projected.percent.y) - 7;
-    return `${path} Q ${controlX} ${controlY} ${projected.percent.x} ${projected.percent.y}`;
-  }, '');
+    return {
+      id: `${projectedWaypoints[index].waypoint.id}-${projectedWaypoints[index + 1].waypoint.id}`,
+      pathData: `M ${previous.x} ${previous.y} Q ${controlX} ${controlY} ${current.x} ${current.y}`,
+      state
+    };
+  });
 
   return (
     <svg className="journeyRouteOverlay" viewBox="0 0 100 100" aria-hidden="true">
-      <path className="journeyRoutePath" d={pathData} />
+      {routeSegments.map((segment) => (
+        <path key={segment.id} className="journeyRoutePath" data-state={segment.state} d={segment.pathData} />
+      ))}
       {projectedWaypoints.map(({ waypoint, projected }) => {
         const state = waypoint.id === journeyRoute.activeWaypointId ? 'active' : waypoint.id === journeyRoute.nextWaypointId ? 'next' : 'idle';
         return <circle key={waypoint.id} className="journeyWaypointMarker" data-state={state} cx={projected.percent.x} cy={projected.percent.y} r={state === 'active' ? 1.95 : state === 'next' ? 1.6 : 1.35} opacity={projected.visible ? 1 : 0.22} />;
