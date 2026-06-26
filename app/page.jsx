@@ -28,6 +28,31 @@ const GEOLOCATION_OPTIONS = {
   maximumAge: 0
 };
 
+const LOCATION_PERMISSION_RESPONSE_KEY = 'geoaware.locationPermissionResponded';
+
+function hasStoredLocationPermissionResponse() {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(LOCATION_PERMISSION_RESPONSE_KEY) === 'true';
+}
+
+function storeLocationPermissionResponse() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(LOCATION_PERMISSION_RESPONSE_KEY, 'true');
+}
+
+async function getGeolocationPermissionState() {
+  if (typeof navigator === 'undefined' || !navigator.permissions?.query) {
+    return 'unknown';
+  }
+
+  try {
+    const status = await navigator.permissions.query({ name: 'geolocation' });
+    return status.state;
+  } catch {
+    return 'unknown';
+  }
+}
+
 function getPreciseBrowserLocation() {
   if (typeof navigator === 'undefined' || !navigator.geolocation) {
     return Promise.reject(new Error('Browser geolocation is unavailable.'));
@@ -148,6 +173,7 @@ function HomeContent() {
   const [detectedLocality, setDetectedLocality] = useState(null);
   const [locationError, setLocationError] = useState('');
   const [locationRequestKey, setLocationRequestKey] = useState(0);
+  const [hasLocationPermissionResponse, setHasLocationPermissionResponse] = useState(false);
   const activeDetectedCoordinates = mode === 'geo' ? detectedCoordinates : null;
   const activeDetectedLocality = mode === 'geo' ? detectedLocality : null;
   const GeoContext = useMemo(() => resolveGeoContext({
@@ -202,15 +228,35 @@ function HomeContent() {
 
 
   useEffect(() => {
-    if (mode !== 'geo') return undefined;
+    setHasLocationPermissionResponse(hasStoredLocationPermissionResponse());
+  }, []);
+
+  useEffect(() => {
+    if (mode !== 'geo' || locationRequestKey === 0) return undefined;
 
     const controller = new AbortController();
     let isActive = true;
 
     setLocationError('');
 
-    getPreciseBrowserLocation()
+    getGeolocationPermissionState()
+      .then((permissionState) => {
+        if (!isActive) return Promise.reject(new DOMException('Location request aborted.', 'AbortError'));
+
+        if (permissionState === 'denied') {
+          storeLocationPermissionResponse();
+          setHasLocationPermissionResponse(true);
+          setDetectedCoordinates(null);
+          setDetectedLocality(null);
+          setLocationError('Location permission is blocked. Enable location in your browser settings, then tap Follow My Location again.');
+          return Promise.reject(new DOMException('Location permission denied.', 'AbortError'));
+        }
+
+        return getPreciseBrowserLocation();
+      })
       .then(async (coordinates) => {
+        storeLocationPermissionResponse();
+        setHasLocationPermissionResponse(true);
         if (!isActive) return;
         setDetectedCoordinates(coordinates);
 
@@ -226,7 +272,9 @@ function HomeContent() {
         if (!isActive || error?.name === 'AbortError') return;
         setDetectedCoordinates(null);
         setDetectedLocality(null);
-        setLocationError(error?.code === 1 ? 'Location permission denied; using country profile fallback.' : 'Precise location unavailable; using country profile fallback.');
+        storeLocationPermissionResponse();
+        setHasLocationPermissionResponse(true);
+        setLocationError(error?.code === 1 ? 'Location permission denied. Enable location in your browser settings, then tap Follow My Location again.' : 'Precise location unavailable; using country profile fallback.');
       });
 
     return () => {
@@ -234,6 +282,12 @@ function HomeContent() {
       controller.abort();
     };
   }, [mode, locationRequestKey]);
+
+  const requestLocationFollow = () => {
+    setMode('geo');
+    setLocationError(hasLocationPermissionResponse ? 'Checking location permission...' : 'Requesting location permission...');
+    setLocationRequestKey((key) => key + 1);
+  };
 
   useEffect(() => {
     if (animationFrameRef.current) window.cancelAnimationFrame(animationFrameRef.current);
@@ -282,7 +336,7 @@ function HomeContent() {
         <div className="heroCopy">
           <h1>God's Word. Wherever you are.</h1>
           <div className="modeSwitch" aria-label="Geo mode selector">
-            <button className={mode === 'geo' ? 'active' : ''} onClick={() => { setMode('geo'); setLocationRequestKey((key) => key + 1); }}><MapPin size={16} /> Follow My Location</button>
+            <button className={mode === 'geo' ? 'active' : ''} onClick={requestLocationFollow}><MapPin size={16} /> Follow My Location</button>
             <button className={mode === 'fixed' ? 'active' : ''} onClick={() => setMode('fixed')}><BookOpen size={16} /> Stay In English</button>
           </div>
         </div>
