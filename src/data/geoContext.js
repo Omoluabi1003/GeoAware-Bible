@@ -1,4 +1,5 @@
 import { defaultProfile, getProfileByCountryCode, languageProfiles } from './languageProfiles.js';
+import { resolveScriptureLanguages } from './autoLanguageResolver.js';
 
 const FUTURE_CONTEXT_HOOKS = Object.freeze({
   localHistoricalContext: null,
@@ -36,6 +37,19 @@ const countryContextModels = {
     hemisphere: { latitudinal: 'Northern', longitudinal: 'Eastern' },
     regionalGrouping: 'West Africa',
     bounds: { minLatitude: 4.2, maxLatitude: 13.9, minLongitude: 2.6, maxLongitude: 14.7 },
+    futureMetadata: FUTURE_CONTEXT_HOOKS
+  },
+
+  CD: {
+    isoCode: 'CD',
+    country: 'Congo',
+    continent: 'Africa',
+    primaryLanguage: 'Lingala',
+    languageCode: 'ln',
+    timezone: 'Africa/Kinshasa',
+    hemisphere: { latitudinal: 'Equatorial', longitudinal: 'Eastern' },
+    regionalGrouping: 'Central Africa',
+    bounds: { minLatitude: -13.5, maxLatitude: 5.4, minLongitude: 12.1, maxLongitude: 31.4 },
     futureMetadata: FUTURE_CONTEXT_HOOKS
   },
   BR: {
@@ -145,11 +159,15 @@ export function resolveGeoContext(input = {}) {
   const city = input.locality?.city || profile.city;
   const region = input.locality?.region || profile.state || model.region;
   const country = input.locality?.country || profile.country || model.country;
-  const recommendedTranslationId = profile.translationId || defaultProfile.translationId;
-  const effectiveTranslationId = input.stayInEnglish ? 'web' : recommendedTranslationId;
-  const recommendedLanguage = profile.primaryLanguage || model.primaryLanguage;
-  const effectiveLanguage = input.stayInEnglish ? 'English' : recommendedLanguage;
-  const languageRegionLabel = profile.languageCode === 'en' ? ` (${model.isoCode})` : '';
+  const languageResolution = resolveScriptureLanguages({ ...model, countryCode: model.isoCode }, {
+    stayInEnglish: input.stayInEnglish,
+    browserLanguages: input.browserLanguages
+  });
+  const recommendedLanguage = languageResolution.recommendations[0]?.englishName || profile.primaryLanguage || model.primaryLanguage;
+  const recommendedTranslationId = languageResolution.recommendations[0]?.resolvedTranslationId || profile.translationId || defaultProfile.translationId;
+  const effectiveTranslationId = languageResolution.selectedTranslationId;
+  const effectiveLanguage = languageResolution.selectedLanguage?.englishName || (input.stayInEnglish ? 'English' : recommendedLanguage);
+  const languageRegionLabel = languageResolution.recommendations[0]?.languageCode === 'en' ? ` (${model.isoCode})` : '';
 
   return Object.freeze({
     ...model,
@@ -162,7 +180,9 @@ export function resolveGeoContext(input = {}) {
     recommendedTranslationId,
     effectiveTranslationId,
     effectiveLanguage,
-    isEnglishOverride: Boolean(input.stayInEnglish),
+    isEnglishOverride: languageResolution.isEnglishOverride,
+    languageRecommendations: languageResolution.recommendations,
+    selectedScriptureLanguage: languageResolution.selectedLanguage,
     coordinates: Object.freeze(input.coordinates || profile.coordinates || model.coordinates),
     source: input.locality?.countryCode ? 'reverse-geocode' : input.coordinates ? 'coordinates' : 'profile',
     summary: `Detected: ${[city, region].filter(Boolean).join(', ') || country} • ${recommendedLanguage}${languageRegionLabel} recommended`,

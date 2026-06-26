@@ -153,7 +153,8 @@ export default function Home() {
     countryCode,
     coordinates: activeDetectedCoordinates,
     locality: activeDetectedLocality,
-    stayInEnglish: mode === 'fixed'
+    stayInEnglish: mode === 'fixed',
+    browserLanguages: typeof navigator === 'undefined' ? [] : navigator.languages
   }), [countryCode, activeDetectedCoordinates, activeDetectedLocality, mode]);
   const profile = languageProfiles[GeoContext.countryCode] || languageProfiles.US;
   const targetEarthCamera = useMemo(() => resolveEarthCamera(profile, activeDetectedCoordinates), [profile, activeDetectedCoordinates]);
@@ -175,11 +176,7 @@ export default function Home() {
     date: new Date(),
     currentScripture: activeTranslation
   }), [activeDetectedCoordinates, activeTranslation, GeoContext, profile]);
-  const alternateLanguages = useMemo(() => (
-    [...new Set(profile.alternates || [])]
-      .filter((language) => language !== profile.primaryLanguage)
-      .slice(0, 2)
-  ), [profile.alternates, profile.primaryLanguage]);
+  const languageRecommendations = GeoContext.languageRecommendations || [];
   const countries = Object.entries(languageProfiles);
   const locationLabel = buildLocationLabel(profile, activeDetectedLocality);
   const arrivalMessage = arrivalStep === 'finding'
@@ -322,7 +319,7 @@ export default function Home() {
           <div className="geoContextSummary" aria-live="polite">
             {GeoContext.summary}{GeoContext.isEnglishOverride ? ' • English override on' : ''}
           </div>
-          <div className="verseBox">
+          <div className={`verseBox ${activeTranslation.availability?.status === 'unavailable' ? 'unavailable' : ''}`}>
             <small>{activeTranslation.reference}</small>
             <p>{activeTranslation.text}</p>
           </div>
@@ -333,9 +330,12 @@ export default function Home() {
             <span className="metadataBadge">Open-License Scripture Engine</span>
             <span className="metadataBadge">GeoScripture Engine</span>
           </div>
-          <div className="languageChips" aria-label="Available local languages">
-            <span>{profile.primaryLanguage}</span>
-            {alternateLanguages.map((language) => <span key={language}>{language}</span>)}
+          <div className="languageChips" aria-label="Scripture language recommendations">
+            {languageRecommendations.slice(0, 5).map((language) => (
+              <span key={language.languageCode} className={language.isAvailable ? 'available' : 'unavailable'} dir={language.direction}>
+                {language.nativeName} <em>{language.availabilityLabel}</em>
+              </span>
+            ))}
           </div>
         </article>
 
