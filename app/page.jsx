@@ -161,6 +161,7 @@ function useReducedMotion() {
 function HomeContent({ walkTheWord }) {
   const [countryCode, setCountryCode] = useState('US');
   const [mode, setMode] = useState('geo');
+  const [readingMode, setReadingMode] = useState('read_near_me');
   const [arrivalStep, setArrivalStep] = useState('ready');
   const [detectedCoordinates, setDetectedCoordinates] = useState(null);
   const [detectedLocality, setDetectedLocality] = useState(null);
@@ -178,12 +179,12 @@ function HomeContent({ walkTheWord }) {
   }), [countryCode, activeDetectedCoordinates, activeDetectedLocality, mode]);
   const profile = languageProfiles[GeoContext.countryCode] || languageProfiles.US;
   const walkWaypoint = walkTheWord.activeWaypoint;
-  const walkWaypointCoordinates = walkWaypoint?.coordinates || null;
-  const walkJourneyRoute = useMemo(() => (walkTheWord.isActive ? {
+  const walkWaypointCoordinates = readingMode === 'walk_the_word' ? walkWaypoint?.coordinates || null : null;
+  const walkJourneyRoute = useMemo(() => (readingMode === 'walk_the_word' && walkTheWord.isActive ? {
     waypoints: walkTheWord.routeWaypoints,
     activeWaypointId: walkWaypoint?.id || null,
     nextWaypointId: walkTheWord.nextWaypoint?.id || null
-  } : null), [walkTheWord.isActive, walkTheWord.routeWaypoints, walkWaypoint?.id, walkTheWord.nextWaypoint?.id]);
+  } : null), [readingMode, walkTheWord.isActive, walkTheWord.routeWaypoints, walkWaypoint?.id, walkTheWord.nextWaypoint?.id]);
   const targetEarthCamera = useMemo(() => resolveEarthCamera(profile, walkWaypointCoordinates || activeDetectedCoordinates), [profile, activeDetectedCoordinates, walkWaypointCoordinates]);
   const animationFrameRef = useRef(null);
   const cameraRef = useRef(targetEarthCamera);
@@ -316,7 +317,36 @@ function HomeContent({ walkTheWord }) {
 
   const walkWaypointReferenceLabel = walkWaypoint?.waypointRole === 'route_context' ? 'Approximate route context' : walkWaypoint?.scriptureRefs[0];
   const displayedReference = walkTheWord.isActive && walkWaypoint ? walkWaypointReferenceLabel : activeTranslation.reference;
-  const displayedText = walkTheWord.isActive && walkWaypoint ? walkWaypoint.historicalSummary : activeTranslation.text;
+  const walkWaypointSummary = walkWaypoint?.historicalSummary || '';
+  const displayedText = walkTheWord.isActive && walkWaypointSummary ? walkWaypointSummary : activeTranslation.text;
+  const selectedReadingModeLabel = readingMode === 'read_near_me' ? 'Read Near Me' : readingMode === 'walk_the_word' ? 'Walk the Word' : 'Explore the World';
+
+  const selectReadingMode = (nextMode) => {
+    setReadingMode(nextMode);
+    if (nextMode === 'read_near_me') {
+      requestLocationFollow();
+    }
+  };
+
+  const renderPrimaryAction = () => {
+    if (readingMode === 'read_near_me') {
+      return <button type="button" onClick={requestLocationFollow}>Use my location</button>;
+    }
+
+    if (readingMode === 'explore_world') {
+      return <button type="button" disabled aria-disabled="true">Coming soon</button>;
+    }
+
+    if (walkTheWord.isActive && walkTheWord.engine.canMoveNext && walkTheWord.isAutoWalking) {
+      return <button type="button" onClick={walkTheWord.pauseAutoWalk}>Pause</button>;
+    }
+
+    if (walkTheWord.isActive) {
+      return <button type="button" onClick={walkTheWord.engine.canMoveNext ? walkTheWord.startAutoWalk : walkTheWord.continue}>{walkTheWord.engine.canMoveNext ? 'Auto Walk' : 'Finish'}</button>;
+    }
+
+    return <button type="button" onClick={walkTheWord.start}>Begin</button>;
+  };
 
   return (
     <main className="pageShell">
@@ -339,38 +369,50 @@ function HomeContent({ walkTheWord }) {
           journeyRoute={walkJourneyRoute}
         />
 
-        <div className={`walkGlobeOverlay ${walkTheWord.isAutoWalking ? 'autoWalking' : ''}`} aria-label="Walk the Word">
-          <p className="walkKicker">Walk the Word</p>
-          <label className="geoNarrativeSelector">
-            <span className="srOnly">Current GeoNarrative</span>
-            <select
-              value={walkTheWord.journeyId}
-              onChange={(event) => walkTheWord.selectJourney(event.target.value)}
-              aria-label="Current GeoNarrative"
-              disabled={walkTheWord.isAutoWalking}
-            >
-              {walkTheWord.availableJourneys.map((journey) => (
-                <option key={journey.id} value={journey.id}>{journey.title}</option>
-              ))}
-            </select>
-          </label>
+        <div className="walkGlobeOverlay" aria-label="Current pilgrimage">
+          <p className="walkKicker">{selectedReadingModeLabel}</p>
+          {readingMode === 'walk_the_word' ? (
+            <label className="geoNarrativeSelector">
+              <span className="srOnly">Current GeoNarrative</span>
+              <select
+                value={walkTheWord.journeyId}
+                onChange={(event) => walkTheWord.selectJourney(event.target.value)}
+                aria-label="Current GeoNarrative"
+                disabled={walkTheWord.isAutoWalking}
+              >
+                {walkTheWord.availableJourneys.map((journey) => (
+                  <option key={journey.id} value={journey.id}>{journey.title}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <div className="walkTextStack" aria-live="polite" aria-atomic="true">
-            <strong>{locationLabel}</strong>
+            <strong>{readingMode === 'explore_world' ? 'A world atlas of Scripture' : locationLabel}</strong>
             <span>{displayedReference}</span>
           </div>
-          {walkTheWord.isActive && walkWaypoint ? (
-            <p className="walkSubtleStatus">{walkWaypoint.historicalSummary}</p>
-          ) : (
-            <p className="walkSubtleStatus">{locationError || (arrivalStep === 'ready' ? `Scripture ready in ${GeoContext.effectiveLanguage}` : arrivalMessage)}</p>
-          )}
-          {walkTheWord.isActive && walkTheWord.engine.canMoveNext && walkTheWord.isAutoWalking ? (
-            <button type="button" onClick={walkTheWord.pauseAutoWalk}>Pause</button>
-          ) : walkTheWord.isActive ? (
-            <button type="button" onClick={walkTheWord.engine.canMoveNext ? walkTheWord.startAutoWalk : walkTheWord.continue}>{walkTheWord.engine.canMoveNext ? 'Auto Walk' : 'Finish'}</button>
-          ) : (
-            <button type="button" onClick={walkTheWord.start}>Begin</button>
-          )}
         </div>
+      </section>
+      <section className="readingModes" aria-label="Reading modes">
+        <button type="button" className={readingMode === 'read_near_me' ? 'active' : ''} onClick={() => selectReadingMode('read_near_me')}>
+          <span>Read Near Me</span>
+          <small>{locationError || buildLocationLabel(profile, activeDetectedLocality)}</small>
+        </button>
+        <button type="button" className={readingMode === 'walk_the_word' ? 'active' : ''} onClick={() => selectReadingMode('walk_the_word')}>
+          <span>Walk the Word</span>
+          <small>{walkTheWord.journey?.title || 'GeoNarrative pilgrimage'}</small>
+        </button>
+        <button type="button" className={readingMode === 'explore_world' ? 'active' : ''} onClick={() => selectReadingMode('explore_world')}>
+          <span>Explore the World</span>
+          <small>Quiet atlas coming soon</small>
+        </button>
+      </section>
+
+      <section className="pilgrimageControls" aria-label="Primary action">
+        <div>
+          <p>{readingMode === 'walk_the_word' ? walkTheWord.journey?.title : selectedReadingModeLabel}</p>
+          <strong>{readingMode === 'walk_the_word' && walkWaypoint ? walkWaypoint.title : displayedReference}</strong>
+        </div>
+        {renderPrimaryAction()}
       </section>
 
       <section className={`countryRail ${walkTheWord.isAutoWalking ? 'isHidden' : ''}`} aria-label="Choose a Scripture language by place">
@@ -385,7 +427,7 @@ function HomeContent({ walkTheWord }) {
 
       <section className="scriptureFlow" aria-label="Current Scripture">
         <p className="scriptureReference">{displayedReference}</p>
-        <p className="scriptureText">{displayedText}</p>
+        <p className={`scriptureText ${walkTheWord.isActive && walkWaypoint ? 'waypointDescription' : ''}`}>{displayedText}</p>
         <p className="scriptureFinePrint">{activeTranslation.name} · {activeTranslation.language}</p>
       </section>
     </main>
