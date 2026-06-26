@@ -339,7 +339,9 @@ function HomeContent({ walkTheWord }) {
     : GeoContext.isEnglishOverride
       ? `Reading in English while journeying through ${GeoContext.country}.`
       : `Reading ${GeoContext.effectiveLanguage} Scripture with ${GeoContext.country} in view.`;
-  const displayedReference = walkTheWord.isActive && walkWaypoint ? walkWaypoint.scriptureRefs[0] : activeTranslation.reference;
+  const walkWaypointReferenceLabel = walkWaypoint?.waypointRole === 'route_context' ? 'Approximate route context' : walkWaypoint?.scriptureRefs[0];
+  const nextWaypointReferenceLabel = walkTheWord.nextWaypoint?.waypointRole === 'route_context' ? 'Approximate route context' : walkTheWord.nextWaypoint?.scriptureRefs[0];
+  const displayedReference = walkTheWord.isActive && walkWaypoint ? walkWaypointReferenceLabel : activeTranslation.reference;
   const displayedText = walkTheWord.isActive && walkWaypoint ? walkWaypoint.historicalSummary : activeTranslation.text;
 
   return (
@@ -372,16 +374,16 @@ function HomeContent({ walkTheWord }) {
           <div className="locationCard walkWaypointCard" aria-label="Active Walk the Word waypoint">
             <div className="walkWaypointCardHeader">
               <span>Waypoint {walkTheWord.engine.waypointIndex + 1} of {walkTheWord.engine.waypointCount}</span>
-              <small>{walkWaypoint.scriptureRefs[0]}</small>
+              <small>{walkWaypointReferenceLabel}</small>
             </div>
             <h2>{walkWaypoint.title}</h2>
             <p>{walkWaypoint.historicalSummary}</p>
             <div className="walkControls" aria-label="Walk the Word controls">
               <div className="walkWaypointSummary">
                 {walkTheWord.nextWaypoint ? (
-                  <strong>Next: {walkTheWord.nextWaypoint.title} · {walkTheWord.nextWaypoint.scriptureRefs[0]}</strong>
+                  <strong>Next: {walkTheWord.nextWaypoint.title} · {nextWaypointReferenceLabel}</strong>
                 ) : (
-                  <strong>{walkWaypoint.title} complete · {walkWaypoint.scriptureRefs[0]}</strong>
+                  <strong>{walkWaypoint.title} complete · {walkWaypointReferenceLabel}</strong>
                 )}
               </div>
               <button type="button" onClick={walkTheWord.continue}>{walkTheWord.engine.canMoveNext ? 'Continue Journey' : 'Finish Journey'}</button>
