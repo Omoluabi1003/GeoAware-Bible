@@ -21,7 +21,7 @@ function freezeWaypoint(waypoint) {
 }
 
 function freezeGeoNarrative(geoNarrative) {
-  const waypoints = [...geoNarrative.waypoints]
+  const waypoints = [...(geoNarrative.waypoints || [])]
     .sort((a, b) => a.sequence - b.sequence)
     .map(freezeWaypoint);
 
