@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { createJourneyEngine } from '../data/journeyEngine.js';
+import { createGeoNarrativeEngine } from '../data/journeyEngine.js';
 
 export const WALK_THE_WORD_JOURNEY_ID = 'journey_to_bethlehem';
 const AUTO_WALK_WAYPOINT_PAUSE_MS = 2600;
@@ -10,7 +10,7 @@ export function useWalkTheWordController({ journeyId = WALK_THE_WORD_JOURNEY_ID 
   const [isActive, setIsActive] = useState(false);
   const [waypointIndex, setWaypointIndex] = useState(0);
   const [isAutoWalking, setIsAutoWalking] = useState(false);
-  const engine = useMemo(() => createJourneyEngine({ journeyId, waypointIndex }), [journeyId, waypointIndex]);
+  const engine = useMemo(() => createGeoNarrativeEngine({ journeyId, waypointIndex }), [journeyId, waypointIndex]);
   const activeWaypoint = isActive ? engine.currentWaypoint : null;
   const nextWaypoint = isActive ? engine.nextWaypoint : null;
   const routeWaypoints = isActive ? engine.journey?.waypoints || Object.freeze([]) : Object.freeze([]);

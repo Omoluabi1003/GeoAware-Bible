@@ -1,4 +1,4 @@
-import { getJourney, journeyList } from './journeyRegistry.js';
+import { getGeoNarrative, geoNarrativeList } from './journeyRegistry.js';
 
 function clampWaypointIndex(index, waypointCount) {
   if (waypointCount <= 0) return 0;
@@ -6,9 +6,9 @@ function clampWaypointIndex(index, waypointCount) {
   return Math.min(Math.max(Math.trunc(index), 0), waypointCount - 1);
 }
 
-function buildSyncState(journey, waypoint) {
+function buildSyncState(geoNarrative, waypoint) {
   return Object.freeze({
-    channels: journey?.futureSyncChannels || Object.freeze([]),
+    channels: geoNarrative?.futureSyncChannels || Object.freeze([]),
     narration: Object.freeze({
       ready: true,
       cueId: waypoint?.synchronization?.narrationCueId || null
@@ -25,9 +25,9 @@ function buildSyncState(journey, waypoint) {
   });
 }
 
-export function createJourneyEngine({ journeyId = journeyList[0]?.id, waypointIndex = 0 } = {}) {
-  const journey = getJourney(journeyId) || journeyList[0] || null;
-  const waypoints = journey?.waypoints || Object.freeze([]);
+export function createGeoNarrativeEngine({ geoNarrativeId = geoNarrativeList[0]?.id, journeyId = geoNarrativeId, waypointIndex = 0 } = {}) {
+  const geoNarrative = getGeoNarrative(journeyId) || geoNarrativeList[0] || null;
+  const waypoints = geoNarrative?.waypoints || Object.freeze([]);
   const currentIndex = clampWaypointIndex(waypointIndex, waypoints.length);
   const currentWaypoint = waypoints[currentIndex] || null;
   const previousWaypoint = currentIndex > 0 ? waypoints[currentIndex - 1] : null;
@@ -38,8 +38,10 @@ export function createJourneyEngine({ journeyId = journeyList[0]?.id, waypointIn
   const completionPercentage = Math.round(progress * 100);
 
   return Object.freeze({
-    journey,
-    journeyId: journey?.id || null,
+    geoNarrative,
+    geoNarrativeId: geoNarrative?.id || null,
+    journey: geoNarrative,
+    journeyId: geoNarrative?.id || null,
     waypointIndex: currentIndex,
     waypointCount: waypoints.length,
     currentWaypoint,
@@ -47,14 +49,19 @@ export function createJourneyEngine({ journeyId = journeyList[0]?.id, waypointIn
     nextWaypoint,
     progress,
     completionPercentage,
-    sync: buildSyncState(journey, currentWaypoint),
+    sync: buildSyncState(geoNarrative, currentWaypoint),
     canMovePrevious: Boolean(previousWaypoint),
     canMoveNext: Boolean(nextWaypoint),
-    selectJourney: (nextJourneyId) => createJourneyEngine({ journeyId: nextJourneyId, waypointIndex: 0 }),
-    goToWaypoint: (nextWaypointIndex) => createJourneyEngine({ journeyId: journey?.id, waypointIndex: nextWaypointIndex }),
-    goToNext: () => createJourneyEngine({ journeyId: journey?.id, waypointIndex: currentIndex + 1 }),
-    goToPrevious: () => createJourneyEngine({ journeyId: journey?.id, waypointIndex: currentIndex - 1 })
+    selectJourney: (nextJourneyId) => createGeoNarrativeEngine({ journeyId: nextJourneyId, waypointIndex: 0 }),
+    goToWaypoint: (nextWaypointIndex) => createGeoNarrativeEngine({ journeyId: geoNarrative?.id, waypointIndex: nextWaypointIndex }),
+    goToNext: () => createGeoNarrativeEngine({ journeyId: geoNarrative?.id, waypointIndex: currentIndex + 1 }),
+    goToPrevious: () => createGeoNarrativeEngine({ journeyId: geoNarrative?.id, waypointIndex: currentIndex - 1 })
   });
 }
 
-export const defaultJourneyEngine = createJourneyEngine();
+export function createJourneyEngine(options) {
+  return createGeoNarrativeEngine(options);
+}
+
+export const defaultGeoNarrativeEngine = createGeoNarrativeEngine();
+export const defaultJourneyEngine = defaultGeoNarrativeEngine;

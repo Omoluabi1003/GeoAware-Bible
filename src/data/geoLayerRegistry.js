@@ -1,5 +1,5 @@
 import { scriptureLanguages } from './scriptureLanguageRegistry.js';
-import { journeyList } from './journeyRegistry.js';
+import { geoNarrativeList } from './journeyRegistry.js';
 
 export const GEO_LAYER_TYPES = Object.freeze({
   scripture: 'scripture',
@@ -74,16 +74,20 @@ const biblicalJourneyLayer = Object.freeze({
   id: 'biblical-journeys',
   type: GEO_LAYER_TYPES.biblicalJourney,
   title: 'Biblical Journeys',
-  description: 'GIS-ready ordered biblical journeys from the JourneyRegistry.',
+  description: 'GIS-ready ordered biblical GeoNarratives from the GeoNarrativeRegistry.',
   toggleReady: true,
-  routes: Object.freeze(journeyList.map((journey) => freezeRoute({
+  routes: Object.freeze(geoNarrativeList.map((journey) => freezeRoute({
     id: journey.id,
     layerType: GEO_LAYER_TYPES.biblicalJourney,
     title: journey.title,
-    description: journey.description,
+    description: journey.summary,
     scriptureRefs: journey.scriptureRefs,
     languageCodes: [],
     sourceStatus: SOURCE_STATUS.derivedFromRegistry,
+    routeMetadata: journey.routeMetadata,
+    narration: journey.narration,
+    languageHooks: journey.languageHooks,
+    completionState: journey.completionState,
     futureSyncChannels: journey.futureSyncChannels,
     waypoints: journey.waypoints.map((waypoint) => ({
       id: waypoint.id,

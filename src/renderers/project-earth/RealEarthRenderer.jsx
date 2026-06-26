@@ -249,22 +249,26 @@ function drawJourneyRoute(ctx, journeyRoute, radius, center, rotation, size, mot
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  projectedWaypoints.slice(1).forEach(({ projected }, index) => {
-    const previous = projectedWaypoints[index].projected;
+  for (let waypointIndex = 1; waypointIndex < projectedWaypoints.length; waypointIndex += 1) {
+    const { projected } = projectedWaypoints[waypointIndex];
+    const previous = projectedWaypoints[waypointIndex - 1].projected;
     const controlX = (previous.x + projected.x) / 2;
     const controlY = Math.min(previous.y, projected.y) - (size * 0.07);
-    const isCompleted = index < activeWaypointIndex;
-    const isActiveSegment = index === activeWaypointIndex;
+    const segmentIndex = waypointIndex - 1;
+    const isCompleted = segmentIndex < activeWaypointIndex;
+    const isActiveSegment = segmentIndex === activeWaypointIndex;
 
     ctx.beginPath();
     ctx.moveTo(previous.x, previous.y);
     ctx.quadraticCurveTo(controlX, controlY, projected.x, projected.y);
     ctx.strokeStyle = isCompleted ? 'rgba(247, 215, 122, .84)' : isActiveSegment ? `rgba(255, 239, 184, ${0.82 * activePulse})` : 'rgba(204, 176, 103, .44)';
     ctx.lineWidth = Math.max(isActiveSegment ? 3.2 : 2.4, size * (isActiveSegment ? 0.0072 : 0.0058));
-    ctx.filter = isActiveSegment ? `drop-shadow(0 0 ${Math.max(4, size * 0.012)}px rgba(255, 232, 151, .46))` : 'none';
+    ctx.shadowColor = isActiveSegment ? 'rgba(255, 232, 151, .46)' : 'transparent';
+    ctx.shadowBlur = isActiveSegment ? Math.max(4, size * 0.012) : 0;
     ctx.stroke();
-  });
-  ctx.filter = 'none';
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+  }
 
   projectedWaypoints.forEach(({ waypoint, projected }) => {
     const isActive = waypoint.id === journeyRoute.activeWaypointId;
