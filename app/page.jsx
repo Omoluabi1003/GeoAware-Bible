@@ -399,8 +399,15 @@ function HomeContent({ walkTheWord }) {
           </div>
           {walkTheWord.isActive && walkWaypoint ? (
             <div className="walkControls" aria-label="Walk the Word controls">
-              <span>Waypoint {walkTheWord.engine.waypointIndex + 1} of {walkTheWord.engine.waypointCount}</span>
-              <button type="button" onClick={walkTheWord.continue}>{walkTheWord.engine.canMoveNext ? 'Continue journey' : 'Finish journey'}</button>
+              <div className="walkWaypointSummary">
+                <span>Waypoint {walkTheWord.engine.waypointIndex + 1} of {walkTheWord.engine.waypointCount}</span>
+                {walkTheWord.nextWaypoint ? (
+                  <strong>Next: {walkTheWord.nextWaypoint.title} · {walkTheWord.nextWaypoint.scriptureRefs[0]}</strong>
+                ) : (
+                  <strong>{walkWaypoint.title} complete · {walkWaypoint.scriptureRefs[0]}</strong>
+                )}
+              </div>
+              <button type="button" onClick={walkTheWord.continue}>{walkTheWord.engine.canMoveNext ? 'Continue Journey' : 'Finish Journey'}</button>
             </div>
           ) : null}
           <div className="readerMeta">
