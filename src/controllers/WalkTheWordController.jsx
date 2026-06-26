@@ -7,8 +7,12 @@ import { getGeoNarrative, geoNarrativeList } from '../data/geoNarrativeRegistry.
 export const WALK_THE_WORD_JOURNEY_ID = 'journey_to_bethlehem';
 const AUTO_WALK_WAYPOINT_PAUSE_MS = 2600;
 
-function resolveRegisteredJourneyId(nextJourneyId) {
+export function resolveRegisteredJourneyId(nextJourneyId) {
   return getGeoNarrative(nextJourneyId)?.id || WALK_THE_WORD_JOURNEY_ID;
+}
+
+function isRegisteredGeoNarrativeId(nextJourneyId) {
+  return Boolean(getGeoNarrative(nextJourneyId));
 }
 
 export function useWalkTheWordController({ journeyId = WALK_THE_WORD_JOURNEY_ID } = {}) {
@@ -48,6 +52,7 @@ export function useWalkTheWordController({ journeyId = WALK_THE_WORD_JOURNEY_ID 
     routeWaypoints,
     isAutoWalking,
     selectJourney: (nextJourneyId) => {
+      if (!isRegisteredGeoNarrativeId(nextJourneyId)) return;
       const resolvedJourneyId = resolveRegisteredJourneyId(nextJourneyId);
       setSelectedJourneyId(resolvedJourneyId);
       setWaypointIndex(0);
