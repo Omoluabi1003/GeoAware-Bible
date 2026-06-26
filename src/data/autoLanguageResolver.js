@@ -37,7 +37,7 @@ export function resolveScriptureLanguages(geoContext = {}, options = {}) {
         isBrowserLanguageMatch: browserMatch,
         isAvailable: Boolean(availableTranslation),
         resolvedTranslationId: availableTranslation?.id || language.defaultTranslationId || null,
-        availabilityLabel: availableTranslation ? 'Available' : 'Awaiting verified open-license Scripture text'
+        availabilityLabel: availableTranslation ? 'Available' : 'Awaiting verified Scripture text'
       });
     })
     .filter((language) => language.isDetectedCountryMatch || language.isDetectedRegionMatch || language.isBrowserLanguageMatch || language.languageCode === defaultScriptureLanguageCode)
