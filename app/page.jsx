@@ -175,7 +175,8 @@ function HomeContent() {
     locality: GeoContext.city,
     language: GeoContext.effectiveLanguage,
     date: new Date(),
-    currentScripture: activeTranslation
+    currentScripture: activeTranslation,
+    geoContext: GeoContext
   }), [activeDetectedCoordinates, activeTranslation, GeoContext, profile]);
   const languageRecommendations = GeoContext.languageRecommendations || [];
   const countries = Object.entries(languageProfiles);
