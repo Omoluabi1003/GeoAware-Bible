@@ -1,21 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Footprints, Globe2, Languages, MapPin, Plane } from 'lucide-react';
 import { resolveGeoContext } from '../src/data/geoContext.js';
-import { buildGeoScriptureContext } from '../src/data/geoscriptureEngine.js';
 import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
 import ProjectEarthRenderer from '../src/renderers/project-earth/ProjectEarthRenderer.jsx';
 import { rotationForGeoCoordinate } from '../src/renderers/project-earth/geoCoordinateEngine.js';
 import { GeoLayerProvider } from '../src/context/GeoLayerContext.jsx';
 import WalkTheWordController from '../src/controllers/WalkTheWordController.jsx';
-
-const journeyStats = [
-  ['Countries', '6'],
-  ['Languages', '11'],
-  ['Mode', 'Geo']
-];
 
 const ARRIVAL_TIMING = {
   recognized: 220,
@@ -201,18 +193,6 @@ function HomeContent({ walkTheWord }) {
   const activeTranslation = useMemo(() => (
     getTranslation(GeoContext.effectiveTranslationId)
   ), [GeoContext.effectiveTranslationId]);
-  const geoScripture = useMemo(() => buildGeoScriptureContext({
-    latitude: activeDetectedCoordinates?.latitude ?? profile.coordinates?.latitude,
-    longitude: activeDetectedCoordinates?.longitude ?? profile.coordinates?.longitude,
-    country: GeoContext.country,
-    region: GeoContext.stateOrProvince,
-    locality: GeoContext.city,
-    language: GeoContext.effectiveLanguage,
-    date: new Date(),
-    currentScripture: activeTranslation,
-    geoContext: GeoContext
-  }), [activeDetectedCoordinates, activeTranslation, GeoContext, profile]);
-  const languageRecommendations = GeoContext.languageRecommendations || [];
   const countries = Object.entries(languageProfiles);
   const locationLabel = walkWaypoint?.title || buildLocationLabel(profile, activeDetectedLocality);
   const arrivalMessage = arrivalStep === 'finding'
@@ -334,13 +314,7 @@ function HomeContent({ walkTheWord }) {
     };
   }, [targetEarthCamera, reducedMotion]);
 
-  const scriptureLocationSummary = walkTheWord.isActive && walkWaypoint
-    ? `${walkTheWord.journey.title}: ${walkWaypoint.title} — ${walkWaypoint.historicalSummary}`
-    : GeoContext.isEnglishOverride
-      ? `Reading in English while journeying through ${GeoContext.country}.`
-      : `Reading ${GeoContext.effectiveLanguage} Scripture with ${GeoContext.country} in view.`;
   const walkWaypointReferenceLabel = walkWaypoint?.waypointRole === 'route_context' ? 'Approximate route context' : walkWaypoint?.scriptureRefs[0];
-  const nextWaypointReferenceLabel = walkTheWord.nextWaypoint?.waypointRole === 'route_context' ? 'Approximate route context' : walkTheWord.nextWaypoint?.scriptureRefs[0];
   const displayedReference = walkTheWord.isActive && walkWaypoint ? walkWaypointReferenceLabel : activeTranslation.reference;
   const displayedText = walkTheWord.isActive && walkWaypoint ? walkWaypoint.historicalSummary : activeTranslation.text;
 
@@ -353,11 +327,6 @@ function HomeContent({ walkTheWord }) {
       <section className="heroGrid">
         <div className="heroCopy">
           <h1>God's Word. Wherever you are.</h1>
-          <div className="modeSwitch" aria-label="Scripture journey choices">
-            <button className={mode === 'geo' ? 'active' : ''} onClick={requestLocationFollow}><MapPin size={16} /> Read Near Me</button>
-            <button className={mode === 'fixed' ? 'active' : ''} onClick={() => setMode('fixed')}><BookOpen size={16} /> Read in English</button>
-            <button className={walkTheWord.isActive ? 'active' : ''} onClick={walkTheWord.start}><Footprints size={16} /> Walk the Word</button>
-          </div>
         </div>
 
         <ProjectEarthRenderer
@@ -370,53 +339,41 @@ function HomeContent({ walkTheWord }) {
           journeyRoute={walkJourneyRoute}
         />
 
-        {walkTheWord.isActive && walkWaypoint ? (
-          <div className="locationCard walkWaypointCard" aria-label="Active Walk the Word waypoint">
-            <div className="walkWaypointCardHeader">
-              <span>Waypoint {walkTheWord.engine.waypointIndex + 1} of {walkTheWord.engine.waypointCount}</span>
-              <small>{walkWaypointReferenceLabel}</small>
-            </div>
-            <h2>{walkWaypoint.title}</h2>
-            <p>{walkWaypoint.historicalSummary}</p>
-            <label className="geoNarrativeSelector">
-              <span>GeoNarrative</span>
-              <select
-                value={walkTheWord.journeyId}
-                onChange={(event) => walkTheWord.selectJourney(event.target.value)}
-                aria-label="Choose Walk the Word GeoNarrative"
-              >
-                {walkTheWord.availableJourneys.map((journey) => (
-                  <option key={journey.id} value={journey.id}>{journey.title}</option>
-                ))}
-              </select>
-            </label>
-            <div className="walkControls" aria-label="Walk the Word controls">
-              <div className="walkWaypointSummary">
-                {walkTheWord.nextWaypoint ? (
-                  <strong>Next: {walkTheWord.nextWaypoint.title} · {nextWaypointReferenceLabel}</strong>
-                ) : (
-                  <strong>{walkWaypoint.title} complete · {walkWaypointReferenceLabel}</strong>
-                )}
-              </div>
-              {walkTheWord.engine.canMoveNext ? (
-                walkTheWord.isAutoWalking ? (
-                  <button type="button" onClick={walkTheWord.pauseAutoWalk}>Pause Journey</button>
-                ) : (
-                  <button type="button" onClick={walkTheWord.startAutoWalk}>Auto Walk</button>
-                )
-              ) : null}
-              <button type="button" onClick={walkTheWord.continue}>{walkTheWord.engine.canMoveNext ? 'Continue Journey' : 'Finish Journey'}</button>
-            </div>
+        <div className={`walkGlobeOverlay ${walkTheWord.isAutoWalking ? 'autoWalking' : ''}`} aria-label="Walk the Word">
+          <p className="walkKicker">Walk the Word</p>
+          <label className="geoNarrativeSelector">
+            <span className="srOnly">Current GeoNarrative</span>
+            <select
+              value={walkTheWord.journeyId}
+              onChange={(event) => walkTheWord.selectJourney(event.target.value)}
+              aria-label="Current GeoNarrative"
+              disabled={walkTheWord.isAutoWalking}
+            >
+              {walkTheWord.availableJourneys.map((journey) => (
+                <option key={journey.id} value={journey.id}>{journey.title}</option>
+              ))}
+            </select>
+          </label>
+          <div className="walkTextStack" aria-live="polite" aria-atomic="true">
+            <strong>{locationLabel}</strong>
+            <span>{displayedReference}</span>
           </div>
-        ) : (
-          <div className={`locationCard ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
-            <h2><span aria-hidden="true">{profile.flag}</span> {locationLabel}</h2>
-            <small aria-live="polite" aria-atomic="true">{locationError || (arrivalStep === 'ready' ? 'Scripture is ready for your journey' : arrivalMessage)}</small>
-          </div>
-        )}
+          {walkTheWord.isActive && walkWaypoint ? (
+            <p className="walkSubtleStatus">{walkWaypoint.historicalSummary}</p>
+          ) : (
+            <p className="walkSubtleStatus">{locationError || (arrivalStep === 'ready' ? `Scripture ready in ${GeoContext.effectiveLanguage}` : arrivalMessage)}</p>
+          )}
+          {walkTheWord.isActive && walkTheWord.engine.canMoveNext && walkTheWord.isAutoWalking ? (
+            <button type="button" onClick={walkTheWord.pauseAutoWalk}>Pause</button>
+          ) : walkTheWord.isActive ? (
+            <button type="button" onClick={walkTheWord.engine.canMoveNext ? walkTheWord.startAutoWalk : walkTheWord.continue}>{walkTheWord.engine.canMoveNext ? 'Auto Walk' : 'Finish'}</button>
+          ) : (
+            <button type="button" onClick={walkTheWord.start}>Begin</button>
+          )}
+        </div>
       </section>
 
-      <section className="countryRail" aria-label="Choose a Scripture language by place">
+      <section className={`countryRail ${walkTheWord.isAutoWalking ? 'isHidden' : ''}`} aria-label="Choose a Scripture language by place">
         {countries.map(([code, item]) => (
           <button key={code} className={countryCode === code ? 'selected' : ''} onClick={() => { setCountryCode(code); setDetectedCoordinates(null); setDetectedLocality(null); setLocationError(''); }} aria-label={`${item.country}, ${item.primaryLanguage}`}>
             <span aria-hidden="true">{item.flag}</span>
@@ -426,55 +383,10 @@ function HomeContent({ walkTheWord }) {
         ))}
       </section>
 
-      <section className="contentGrid">
-        <article className={`readerPanel glassPanel ${arrivalStep !== 'ready' ? 'arriving' : ''}`}>
-          <div className="panelHeader">
-            <p className="eyebrow"><Languages size={15} /> Today’s reading</p>
-            <span>{activeTranslation.language}</span>
-          </div>
-          <div className="geoContextSummary" aria-live="polite">
-            {scriptureLocationSummary}
-          </div>
-          <div className={`verseBox ${activeTranslation.availability?.status === 'unavailable' ? 'unavailable' : ''}`}>
-            <small>{displayedReference}</small>
-            <p>{displayedText}</p>
-          </div>
-          <div className="readerMeta">
-            <strong>{activeTranslation.name}</strong>
-            <span>{activeTranslation.license}</span>
-            <span>{activeTranslation.licenseSource}</span>
-          </div>
-          <div className="languageChips" aria-label="Scripture language choices">
-            {languageRecommendations.slice(0, 5).map((language) => (
-              <span key={language.languageCode} className={language.isAvailable ? 'available' : 'unavailable'} dir={language.direction}>
-                {language.countryScope?.flag ? <span aria-hidden="true">{language.countryScope.flag}</span> : null} {language.nativeName} <em>{language.availabilityLabel}</em>
-              </span>
-            ))}
-          </div>
-        </article>
-
-        <aside className="passport glassPanel">
-          <p className="eyebrow"><Plane size={15} /> Pilgrim passport</p>
-          <h2>Your Scripture journey</h2>
-          <div className="statGrid">
-            {journeyStats.map(([label, value]) => (
-              <div key={label}><strong>{value}</strong><span>{label}</span></div>
-            ))}
-          </div>
-          <div className="prayerCard">
-            <small>Prayer for the road</small>
-            <p>{geoScripture.PrayerPrompt}</p>
-          </div>
-        </aside>
-      </section>
-
-      <section className="whyPanel glassPanel">
-        <div className="featureIcon"><Globe2 /></div>
-        <div>
-          <p className="eyebrow">Why GeoAware Bible</p>
-          <h3>Read the Word with a sense of place.</h3>
-          <p>{geoScripture.GeoInsight}</p>
-        </div>
+      <section className="scriptureFlow" aria-label="Current Scripture">
+        <p className="scriptureReference">{displayedReference}</p>
+        <p className="scriptureText">{displayedText}</p>
+        <p className="scriptureFinePrint">{activeTranslation.name} · {activeTranslation.language}</p>
       </section>
     </main>
   );
