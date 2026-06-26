@@ -36,12 +36,12 @@ const scriptureCatalog = {
     },
     'sample-fr': {
       id: 'sample-fr',
-      name: 'French Open-License Placeholder Sample',
+      name: 'French Scripture Text Pending',
       abbreviation: 'FR-SAMPLE',
       language: 'French',
       license: {
-        name: 'Metadata-only placeholder; no Scripture text included',
-        source: 'Awaiting verified public-domain or open-license French Scripture source'
+        name: 'Awaiting verified Scripture text',
+        source: 'Awaiting verified French Scripture text'
       },
       defaultPassage: {
         bookId: 'john',
@@ -50,18 +50,18 @@ const scriptureCatalog = {
       },
       availability: {
         status: 'unavailable',
-        message: 'Awaiting verified public-domain or open-license Scripture text; no Scripture text is bundled for this language yet.'
+        message: 'Awaiting verified Scripture text for this language.'
       },
       books: {}
     },
     'sample-pt': {
       id: 'sample-pt',
-      name: 'Portuguese Open-License Placeholder Sample',
+      name: 'Portuguese Scripture Text Pending',
       abbreviation: 'PT-SAMPLE',
       language: 'Portuguese',
       license: {
-        name: 'Metadata-only placeholder; no Scripture text included',
-        source: 'Awaiting verified public-domain or open-license Portuguese Scripture source'
+        name: 'Awaiting verified Scripture text',
+        source: 'Awaiting verified Portuguese Scripture text'
       },
       defaultPassage: {
         bookId: 'john',
@@ -70,18 +70,18 @@ const scriptureCatalog = {
       },
       availability: {
         status: 'unavailable',
-        message: 'Awaiting verified public-domain or open-license Scripture text; no Scripture text is bundled for this language yet.'
+        message: 'Awaiting verified Scripture text for this language.'
       },
       books: {}
     },
     'sample-sw': {
       id: 'sample-sw',
-      name: 'Swahili Open-License Placeholder Sample',
+      name: 'Swahili Scripture Text Pending',
       abbreviation: 'SW-SAMPLE',
       language: 'Swahili',
       license: {
-        name: 'Metadata-only placeholder; no Scripture text included',
-        source: 'Awaiting verified public-domain or open-license Swahili Scripture source'
+        name: 'Awaiting verified Scripture text',
+        source: 'Awaiting verified Swahili Scripture text'
       },
       defaultPassage: {
         bookId: 'john',
@@ -90,18 +90,18 @@ const scriptureCatalog = {
       },
       availability: {
         status: 'unavailable',
-        message: 'Awaiting verified public-domain or open-license Scripture text; no Scripture text is bundled for this language yet.'
+        message: 'Awaiting verified Scripture text for this language.'
       },
       books: {}
     },
     'sample-ja': {
       id: 'sample-ja',
-      name: 'Japanese Open-License Placeholder Sample',
+      name: 'Japanese Scripture Text Pending',
       abbreviation: 'JA-SAMPLE',
       language: 'Japanese',
       license: {
-        name: 'Metadata-only placeholder; no Scripture text included',
-        source: 'Awaiting verified public-domain or open-license Japanese Scripture source'
+        name: 'Awaiting verified Scripture text',
+        source: 'Awaiting verified Japanese Scripture text'
       },
       defaultPassage: {
         bookId: 'john',
@@ -110,7 +110,7 @@ const scriptureCatalog = {
       },
       availability: {
         status: 'unavailable',
-        message: 'Awaiting verified public-domain or open-license Scripture text; no Scripture text is bundled for this language yet.'
+        message: 'Awaiting verified Scripture text for this language.'
       },
       books: {}
     }
