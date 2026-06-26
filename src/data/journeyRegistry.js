@@ -46,9 +46,9 @@ export const JourneyRegistry = Object.freeze({
         latitude: 32.6996,
         longitude: 35.3035,
         title: 'Nazareth',
-        scriptureRefs: ['Luke 1:26-38', 'Luke 2:4'],
+        scriptureRefs: ['Luke 2:1-5'],
         sequence: 1,
-        historicalSummary: 'Nazareth was the Galilean home of Mary and Joseph before the census journey toward Judea.',
+        historicalSummary: 'Joseph and Mary begin their journey.',
         estimatedTravelDuration: '4-7 days on foot',
         synchronization: {
           narrationCueId: 'journey_to_bethlehem.nazareth',
@@ -61,9 +61,9 @@ export const JourneyRegistry = Object.freeze({
         latitude: 31.7054,
         longitude: 35.2024,
         title: 'Bethlehem',
-        scriptureRefs: ['Micah 5:2', 'Luke 2:4-7'],
+        scriptureRefs: ['Luke 2:6-7'],
         sequence: 2,
-        historicalSummary: 'Bethlehem, the city of David, is the Judean destination where Luke places the birth of Jesus.',
+        historicalSummary: 'Jesus is born in Bethlehem.',
         estimatedTravelDuration: null,
         synchronization: {
           narrationCueId: 'journey_to_bethlehem.bethlehem',
