@@ -181,6 +181,7 @@ function HomeContent({ walkTheWord }) {
   const [isGeoGuideExpanded, setIsGeoGuideExpanded] = useState(false);
   const [geoGuideResponse, setGeoGuideResponse] = useState('');
   const geoGuideInputRef = useRef(null);
+  const quietWorshipAudioRef = useRef(null);
   const geoGuideSuggestions = useMemo(() => {
     return GEONARRATIVE_STUDIO_SUGGESTED_PROMPTS.slice(0, 3);
   }, []);
@@ -368,7 +369,35 @@ function HomeContent({ walkTheWord }) {
   ]);
   const selectedReadingModeLabel = readingMode === 'read_near_me' ? 'Read Near Me' : readingMode === 'walk_the_word' ? 'Walk the Word' : 'Explore the World';
   const worshipSuggestion = readingMode === 'read_near_me' ? geoContext.worshipSuggestion : null;
+  const quietWorshipStreamUrl = worshipSuggestion?.isPlayable ? worshipSuggestion.streamUrl : '';
+  const [quietWorshipPlayingUrl, setQuietWorshipPlayingUrl] = useState('');
+  const isQuietWorshipPlaying = Boolean(quietWorshipStreamUrl && quietWorshipPlayingUrl === quietWorshipStreamUrl);
 
+  useEffect(() => {
+    const audio = quietWorshipAudioRef.current;
+    if (audio && audio.src !== quietWorshipStreamUrl) {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    }
+    setQuietWorshipPlayingUrl('');
+  }, [quietWorshipStreamUrl]);
+
+  const toggleQuietWorshipPlayback = () => {
+    const audio = quietWorshipAudioRef.current;
+    if (!audio || !quietWorshipStreamUrl) return;
+
+    if (isQuietWorshipPlaying) {
+      audio.pause();
+      setQuietWorshipPlayingUrl('');
+      return;
+    }
+
+    audio.src = quietWorshipStreamUrl;
+    audio.play()
+      .then(() => setQuietWorshipPlayingUrl(quietWorshipStreamUrl))
+      .catch(() => setQuietWorshipPlayingUrl(''));
+  };
 
   useEffect(() => {
     const nextScripture = {
@@ -672,7 +701,22 @@ function HomeContent({ walkTheWord }) {
             <strong>{worshipSuggestion.stationName}</strong>
             <small>{worshipSuggestion.city ? `${worshipSuggestion.city} • ` : ''}{worshipSuggestion.country}</small>
             {worshipSuggestion.isPlayable && worshipSuggestion.streamUrl ? (
-              <a className="quietWorshipListen" href={worshipSuggestion.streamUrl} target="_blank" rel="noreferrer" aria-label={`Listen to ${worshipSuggestion.stationName}`}>Listen</a>
+              <>
+                <button
+                  type="button"
+                  className="quietWorshipListen"
+                  onClick={toggleQuietWorshipPlayback}
+                  aria-label={`${isQuietWorshipPlaying ? 'Pause' : 'Play'} ${worshipSuggestion.stationName} inside GeoAware Bible`}
+                >
+                  {isQuietWorshipPlaying ? 'Pause' : 'Play'}
+                </button>
+                <audio
+                  ref={quietWorshipAudioRef}
+                  preload="none"
+                  onPause={() => setQuietWorshipPlayingUrl('')}
+                  onEnded={() => setQuietWorshipPlayingUrl('')}
+                />
+              </>
             ) : (
               <small className="quietWorshipInfo">Suggestion only</small>
             )}
