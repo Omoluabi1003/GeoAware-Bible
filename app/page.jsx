@@ -8,6 +8,7 @@ import ProjectEarthRenderer from '../src/renderers/project-earth/ProjectEarthRen
 import { rotationForGeoCoordinate } from '../src/renderers/project-earth/geoCoordinateEngine.js';
 import { GeoLayerProvider } from '../src/context/GeoLayerContext.jsx';
 import { createGeoGuideResolver } from '../src/data/geoGuideResolver.js';
+import { resolveGeoNarrativeStudioPrompt, GEONARRATIVE_STUDIO_STATUS } from '../src/data/geoNarrativeStudio.js';
 import { GEOGUIDE_ACTION_TYPES, GEOGUIDE_INTENTS } from '../src/data/geoGuideIntentModel.js';
 import WalkTheWordController from '../src/controllers/WalkTheWordController.jsx';
 
@@ -418,6 +419,16 @@ function HomeContent({ walkTheWord }) {
       return { type: GEOGUIDE_INTENTS.walkGeoNarrative, slots: { geoNarrativeId: 'paul_first_missionary_journey' }, source: 'typed_command', rawText: commandText };
     }
 
+    const explicitStudioMatch = normalizedCommand.match(/^(?:build|create)\s+(?:a\s+)?(?:journey|geonarrative)\s+(?:for|of|through|about)\s+(.+)$/);
+    if (explicitStudioMatch) {
+      return { type: GEOGUIDE_INTENTS.walkGeoNarrative, slots: { studioPrompt: explicitStudioMatch[1].trim() }, source: 'typed_command', rawText: commandText };
+    }
+
+    const studioResult = resolveGeoNarrativeStudioPrompt(normalizedCommand);
+    if (studioResult.status === GEONARRATIVE_STUDIO_STATUS.supported) {
+      return { type: GEOGUIDE_INTENTS.walkGeoNarrative, slots: { studioPrompt: normalizedCommand }, source: 'typed_command', rawText: commandText };
+    }
+
     const languageMatch = normalizedCommand.match(/^(?:change|switch)\s+(?:to\s+)?(.+)$/);
     if (languageMatch) {
       return { type: GEOGUIDE_INTENTS.changeLanguage, slots: { language: languageMatch[1].trim() }, source: 'typed_command', rawText: commandText };
@@ -427,23 +438,23 @@ function HomeContent({ walkTheWord }) {
   };
 
   const applyGeoGuideAction = (guideResult) => {
-    switch (guideResult.action.type) {
+    switch (guideResult.action?.type) {
       case GEOGUIDE_ACTION_TYPES.readNearMe:
         setReadingMode('read_near_me');
         requestLocationFollow();
         return 'Opening Read Near Me.';
       case GEOGUIDE_ACTION_TYPES.walkGeoNarrative: {
-        const nextJourneyId = guideResult.action.payload.geoNarrativeId;
+        const nextJourneyId = guideResult.action?.payload?.geoNarrativeId;
         if (nextJourneyId) walkTheWord.selectJourney(nextJourneyId);
         setReadingMode('walk_the_word');
         walkTheWord.start();
-        return nextJourneyId === 'paul_first_missionary_journey' ? 'Showing Paul’s journey.' : 'Walking to Bethlehem.';
+        return guideResult.message || 'I can build that journey from curated Scripture geography.';
       }
       case GEOGUIDE_ACTION_TYPES.explorePlace:
-        setReadingMode(guideResult.action.payload.readingMode || 'explore_world');
-        return guideResult.action.payload.placeType === 'world_placeholder' ? 'Opening Explore the World.' : 'Opening this place.';
+        setReadingMode(guideResult.action?.payload?.readingMode || 'explore_world');
+        return guideResult.action?.payload?.placeType === 'world_placeholder' ? 'Opening Explore the World.' : 'Opening this place.';
       case GEOGUIDE_ACTION_TYPES.changeLanguage: {
-        const languageCode = guideResult.action.payload.languageCode;
+        const languageCode = guideResult.action?.payload?.languageCode;
         if (languageCode === 'en') {
           setCountryCode('US');
           setMode('fixed');
@@ -472,8 +483,8 @@ function HomeContent({ walkTheWord }) {
     }
 
     const guideResult = geoGuide.resolve(intent);
-    if (guideResult.action.type === GEOGUIDE_ACTION_TYPES.fallback) {
-      setGeoGuideResponse('I can guide places and languages already bundled here.');
+    if (guideResult.action?.type === GEOGUIDE_ACTION_TYPES.fallback) {
+      setGeoGuideResponse(guideResult.message || 'I can guide places and languages already bundled here.');
       return;
     }
 

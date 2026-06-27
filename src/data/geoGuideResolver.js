@@ -1,6 +1,7 @@
 import { defaultGeoContext, getGeoContextModel, resolveGeoContext, supportedGeoContextCountries } from './geoContext.js';
 import { geoNarrativeList, getGeoNarrative } from './geoNarrativeRegistry.js';
 import { getScriptureLanguage, ScriptureLanguageRegistry } from './scriptureLanguageRegistry.js';
+import { GEONARRATIVE_STUDIO_STATUS, resolveGeoNarrativeStudioPrompt } from './geoNarrativeStudio.js';
 import {
   GEOGUIDE_ACTION_TYPES,
   GEOGUIDE_BIBLICAL_GEOGRAPHY_POLICY,
@@ -94,13 +95,17 @@ function resolveReadNearMe(intent, environment) {
 }
 
 function resolveWalkGeoNarrative(intent) {
-  const narrativeId = intent.slots.geoNarrativeId || intent.slots.journeyId || intent.slots.id;
-  const narrative = getGeoNarrative(narrativeId) || geoNarrativeList.find((item) => normalizeSearchText(item.title) === normalizeSearchText(intent.slots.title));
+  const studioPrompt = intent.slots.studioPrompt || intent.slots.prompt;
+  const studioResult = studioPrompt ? resolveGeoNarrativeStudioPrompt(studioPrompt) : null;
+  if (studioResult && studioResult.status !== GEONARRATIVE_STUDIO_STATUS.supported) return fallback(studioResult.message, GEOGUIDE_STATUS.unsupported);
+
+  const narrativeId = studioResult?.geoNarrativeId || intent.slots.geoNarrativeId || intent.slots.journeyId || intent.slots.id;
+  const narrative = studioResult?.geoNarrative || getGeoNarrative(narrativeId) || geoNarrativeList.find((item) => normalizeSearchText(item.title) === normalizeSearchText(intent.slots.title));
   if (!narrative) return fallback(FALLBACK_MESSAGES.narrativeNotFound, GEOGUIDE_STATUS.notFound);
 
   return response({
     actionType: GEOGUIDE_ACTION_TYPES.walkGeoNarrative,
-    message: `Open the bundled GeoNarrative: ${narrative.title}.`,
+    message: studioResult?.message || `Open the bundled GeoNarrative: ${narrative.title}.`,
     payload: { geoNarrativeId: narrative.id, readingMode: 'walk_the_word', geoNarrative: narrative }
   });
 }
