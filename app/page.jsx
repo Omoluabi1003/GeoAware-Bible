@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { resolveGeoContext } from '../src/data/geoContext.js';
 import { languageProfiles } from '../src/data/languageProfiles.js';
 import { getTranslation } from '../src/data/translations.js';
@@ -369,19 +369,35 @@ function HomeContent({ walkTheWord }) {
   ]);
   const selectedReadingModeLabel = readingMode === 'read_near_me' ? 'Read Near Me' : readingMode === 'walk_the_word' ? 'Walk the Word' : 'Explore the World';
   const worshipSuggestion = readingMode === 'read_near_me' ? geoContext.worshipSuggestion : null;
-  const quietWorshipStreamUrl = worshipSuggestion?.isPlayable ? worshipSuggestion.streamUrl : '';
+  const quietWorshipStreamUrl = worshipSuggestion?.isPlayable && worshipSuggestion.stream?.status === 'verified' ? worshipSuggestion.streamUrl : '';
   const [quietWorshipPlayingUrl, setQuietWorshipPlayingUrl] = useState('');
   const isQuietWorshipPlaying = Boolean(quietWorshipStreamUrl && quietWorshipPlayingUrl === quietWorshipStreamUrl);
+
+  const releaseQuietWorshipAudio = useCallback((audio = quietWorshipAudioRef.current) => {
+    if (!audio) return;
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+  }, []);
+
+  const setQuietWorshipAudioRef = useCallback((audio) => {
+    if (quietWorshipAudioRef.current && quietWorshipAudioRef.current !== audio) {
+      releaseQuietWorshipAudio(quietWorshipAudioRef.current);
+    }
+    quietWorshipAudioRef.current = audio;
+  }, [releaseQuietWorshipAudio]);
 
   useEffect(() => {
     const audio = quietWorshipAudioRef.current;
     if (audio && audio.src !== quietWorshipStreamUrl) {
-      audio.pause();
-      audio.removeAttribute('src');
-      audio.load();
+      releaseQuietWorshipAudio(audio);
     }
     setQuietWorshipPlayingUrl('');
-  }, [quietWorshipStreamUrl]);
+  }, [quietWorshipStreamUrl, releaseQuietWorshipAudio]);
+
+  useEffect(() => () => {
+    releaseQuietWorshipAudio();
+  }, [releaseQuietWorshipAudio]);
 
   const toggleQuietWorshipPlayback = () => {
     const audio = quietWorshipAudioRef.current;
@@ -394,9 +410,14 @@ function HomeContent({ walkTheWord }) {
     }
 
     audio.src = quietWorshipStreamUrl;
+    setQuietWorshipPlayingUrl(quietWorshipStreamUrl);
     audio.play()
-      .then(() => setQuietWorshipPlayingUrl(quietWorshipStreamUrl))
-      .catch(() => setQuietWorshipPlayingUrl(''));
+      .catch(() => {
+        if (audio.src === quietWorshipStreamUrl) {
+          releaseQuietWorshipAudio(audio);
+        }
+        setQuietWorshipPlayingUrl('');
+      });
   };
 
   useEffect(() => {
@@ -711,7 +732,7 @@ function HomeContent({ walkTheWord }) {
                   {isQuietWorshipPlaying ? 'Pause' : 'Play'}
                 </button>
                 <audio
-                  ref={quietWorshipAudioRef}
+                  ref={setQuietWorshipAudioRef}
                   preload="none"
                   onPause={() => setQuietWorshipPlayingUrl('')}
                   onEnded={() => setQuietWorshipPlayingUrl('')}

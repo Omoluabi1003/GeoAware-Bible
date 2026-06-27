@@ -1,41 +1,90 @@
-const ChristianRadioRegistry = Object.freeze({
+const RADIO_SOURCE_STATUSES = Object.freeze({
+  verified: 'verified',
+  informational: 'informational',
+  unavailable: 'unavailable'
+});
+
+const DIRECT_AUDIO_URL_PATTERN = /\.(aac|m3u8|mp3|ogg|opus|pls|wav)(\?.*)?$/i;
+
+function freezeStation(station) {
+  return Object.freeze({
+    ...station,
+    languageCodes: Object.freeze([...(station.languageCodes || [])]),
+    websiteUrl: station.websiteUrl || null,
+    streamUrl: station.verifiedStreamUrl || null,
+    stream: Object.freeze({
+      status: station.verifiedStreamUrl ? RADIO_SOURCE_STATUSES.verified : RADIO_SOURCE_STATUSES.unavailable,
+      url: station.verifiedStreamUrl || null,
+      format: station.streamFormat || null,
+      verifiedAt: station.streamVerifiedAt || null
+    }),
+    playback: Object.freeze({
+      playable: Boolean(station.verifiedStreamUrl),
+      requiresInAppPlayback: true,
+      openExternalWebsite: false
+    }),
+    waveAtlas: Object.freeze({
+      source: 'waveatlas-compatible-adapter',
+      stationId: station.waveAtlasStationId || station.id,
+      syncStatus: station.verifiedStreamUrl ? RADIO_SOURCE_STATUSES.verified : RADIO_SOURCE_STATUSES.informational,
+      importReady: true
+    })
+  });
+}
+
+function isVerifiedDirectAudioEndpoint(url) {
+  if (!url) return false;
+  try {
+    const parsedUrl = new URL(url);
+    return ['http:', 'https:'].includes(parsedUrl.protocol) && DIRECT_AUDIO_URL_PATTERN.test(parsedUrl.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function toWaveAtlasStation(station) {
+  const verifiedStreamUrl = isVerifiedDirectAudioEndpoint(station.streamUrl) ? station.streamUrl : null;
+  return freezeStation({ ...station, verifiedStreamUrl });
+}
+
+const WaveAtlasChristianWorshipStations = Object.freeze({
   US: Object.freeze([
-    Object.freeze({ id: 'us-k-love', name: 'K-LOVE', countryCode: 'US', country: 'United States', city: 'Rocklin', languageCodes: Object.freeze(['en']), streamUrl: 'https://www.klove.com/', description: 'Contemporary Christian worship and encouragement from a national U.S. network.' })
+    toWaveAtlasStation({ id: 'us-k-love', name: 'K-LOVE', countryCode: 'US', country: 'United States', city: 'Rocklin', languageCodes: ['en'], websiteUrl: 'https://www.klove.com/', description: 'Contemporary Christian worship and encouragement from a national U.S. network.' })
   ]),
   NG: Object.freeze([
-    Object.freeze({ id: 'ng-praiseworld-radio', name: 'Praiseworld Radio', countryCode: 'NG', country: 'Nigeria', city: 'Lagos', languageCodes: Object.freeze(['en']), streamUrl: 'https://www.praiseworldradio.com/', description: 'Gospel music and faith programming rooted in Nigeria.' })
+    toWaveAtlasStation({ id: 'ng-praiseworld-radio', name: 'Praiseworld Radio', countryCode: 'NG', country: 'Nigeria', city: 'Lagos', languageCodes: ['en'], websiteUrl: 'https://www.praiseworldradio.com/', description: 'Gospel music and faith programming rooted in Nigeria.' })
   ]),
   CG: Object.freeze([
-    Object.freeze({ id: 'cg-radio-brazzaville-foi', name: 'Radio Brazzaville Foi', countryCode: 'CG', country: 'Republic of the Congo', city: 'Brazzaville', languageCodes: Object.freeze(['fr', 'ln']), streamUrl: null, description: 'Starter placeholder for French and Lingala worship discovery in Brazzaville.' })
+    toWaveAtlasStation({ id: 'cg-radio-brazzaville-foi', name: 'Radio Brazzaville Foi', countryCode: 'CG', country: 'Republic of the Congo', city: 'Brazzaville', languageCodes: ['fr', 'ln'], websiteUrl: null, description: 'Starter placeholder for French and Lingala worship discovery in Brazzaville.' })
   ]),
   CD: Object.freeze([
-    Object.freeze({ id: 'cd-radio-elonga', name: 'Radio Elonga', countryCode: 'CD', country: 'Democratic Republic of the Congo', city: 'Kinshasa', languageCodes: Object.freeze(['ln', 'fr']), streamUrl: null, description: 'Starter placeholder for Congolese worship discovery near Kinshasa.' })
+    toWaveAtlasStation({ id: 'cd-radio-elonga', name: 'Radio Elonga', countryCode: 'CD', country: 'Democratic Republic of the Congo', city: 'Kinshasa', languageCodes: ['ln', 'fr'], websiteUrl: null, description: 'Starter placeholder for Congolese worship discovery near Kinshasa.' })
   ]),
   BR: Object.freeze([
-    Object.freeze({ id: 'br-feliz-fm', name: 'Feliz FM', countryCode: 'BR', country: 'Brazil', city: 'São Paulo', languageCodes: Object.freeze(['pt']), streamUrl: 'https://www.felizfm.com.br/', description: 'Brazilian Christian music and devotional programming in Portuguese.' })
+    toWaveAtlasStation({ id: 'br-feliz-fm', name: 'Feliz FM', countryCode: 'BR', country: 'Brazil', city: 'São Paulo', languageCodes: ['pt'], websiteUrl: 'https://www.felizfm.com.br/', description: 'Brazilian Christian music and devotional programming in Portuguese.' })
   ]),
   KE: Object.freeze([
-    Object.freeze({ id: 'ke-hope-fm', name: 'Hope FM', countryCode: 'KE', country: 'Kenya', city: 'Nairobi', languageCodes: Object.freeze(['en', 'sw']), streamUrl: 'https://www.hopefm.org/', description: 'Christian radio from Nairobi with worship and teaching for Kenya.' })
+    toWaveAtlasStation({ id: 'ke-hope-fm', name: 'Hope FM', countryCode: 'KE', country: 'Kenya', city: 'Nairobi', languageCodes: ['en', 'sw'], websiteUrl: 'https://www.hopefm.org/', description: 'Christian radio from Nairobi with worship and teaching for Kenya.' })
   ]),
   FR: Object.freeze([
-    Object.freeze({ id: 'fr-radio-esperance', name: 'Radio Espérance', countryCode: 'FR', country: 'France', city: 'Saint-Étienne', languageCodes: Object.freeze(['fr']), streamUrl: 'https://radio-esperance.fr/', description: 'French Christian prayer, worship, and teaching.' })
+    toWaveAtlasStation({ id: 'fr-radio-esperance', name: 'Radio Espérance', countryCode: 'FR', country: 'France', city: 'Saint-Étienne', languageCodes: ['fr'], websiteUrl: 'https://radio-esperance.fr/', description: 'French Christian prayer, worship, and teaching.' })
   ]),
   JP: Object.freeze([
-    Object.freeze({ id: 'jp-friendship-radio', name: 'Friendship Radio', countryCode: 'JP', country: 'Japan', city: 'Tokyo', languageCodes: Object.freeze(['ja']), streamUrl: null, description: 'Starter placeholder for Japanese Christian worship discovery.' })
+    toWaveAtlasStation({ id: 'jp-friendship-radio', name: 'Friendship Radio', countryCode: 'JP', country: 'Japan', city: 'Tokyo', languageCodes: ['ja'], websiteUrl: null, description: 'Starter placeholder for Japanese Christian worship discovery.' })
   ]),
   IL: Object.freeze([
-    Object.freeze({ id: 'il-voice-of-hope', name: 'Voice of Hope', countryCode: 'IL', country: 'Israel', city: 'Jerusalem', languageCodes: Object.freeze(['he', 'en', 'ar']), streamUrl: 'https://voiceofhope.com/', description: 'Faith-focused programming connected with the Holy Land region.' })
+    toWaveAtlasStation({ id: 'il-voice-of-hope', name: 'Voice of Hope', countryCode: 'IL', country: 'Israel', city: 'Jerusalem', languageCodes: ['he', 'en', 'ar'], websiteUrl: 'https://voiceofhope.com/', description: 'Faith-focused programming connected with the Holy Land region.' })
   ]),
   GR: Object.freeze([
-    Object.freeze({ id: 'gr-christianity-radio', name: 'Christianity Radio', countryCode: 'GR', country: 'Greece', city: 'Athens', languageCodes: Object.freeze(['el']), streamUrl: null, description: 'Starter placeholder for Greek worship and Christian teaching discovery.' })
+    toWaveAtlasStation({ id: 'gr-christianity-radio', name: 'Christianity Radio', countryCode: 'GR', country: 'Greece', city: 'Athens', languageCodes: ['el'], websiteUrl: null, description: 'Starter placeholder for Greek worship and Christian teaching discovery.' })
   ]),
   TR: Object.freeze([
-    Object.freeze({ id: 'tr-radyo-shemma', name: 'Radyo Shema', countryCode: 'TR', country: 'Türkiye', city: 'Ankara', languageCodes: Object.freeze(['tr']), streamUrl: 'https://radyosema.com.tr/', description: 'Turkish Christian radio with worship and biblical teaching.' })
+    toWaveAtlasStation({ id: 'tr-radyo-shemma', name: 'Radyo Shema', countryCode: 'TR', country: 'Türkiye', city: 'Ankara', languageCodes: ['tr'], websiteUrl: 'https://radyosema.com.tr/', description: 'Turkish Christian radio with worship and biblical teaching.' })
   ])
 });
 
 export function getChristianRadioStations(countryCode) {
-  return ChristianRadioRegistry[countryCode?.toUpperCase?.()] || Object.freeze([]);
+  return WaveAtlasChristianWorshipStations[countryCode?.toUpperCase?.()] || Object.freeze([]);
 }
 
 export function resolveChristianRadioSuggestion(geoContext = {}) {
@@ -43,7 +92,7 @@ export function resolveChristianRadioSuggestion(geoContext = {}) {
   const station = stations[0] || null;
   if (!station) return null;
 
-  const hasVerifiedStream = Boolean(station.streamUrl);
+  const isPlayable = station.playback.playable && Boolean(station.stream.url);
 
   return Object.freeze({
     id: station.id,
@@ -54,12 +103,16 @@ export function resolveChristianRadioSuggestion(geoContext = {}) {
     country: station.country,
     city: station.city,
     languageCodes: station.languageCodes,
-    href: hasVerifiedStream ? station.streamUrl : null,
-    streamUrl: hasVerifiedStream ? station.streamUrl : null,
+    websiteUrl: station.websiteUrl,
+    href: null,
+    streamUrl: isPlayable ? station.stream.url : null,
+    stream: station.stream,
     description: station.description,
-    isPlayable: hasVerifiedStream,
-    playerReady: false
+    sourceStatus: station.waveAtlas.syncStatus,
+    isPlayable,
+    playerReady: false,
+    waveAtlas: station.waveAtlas
   });
 }
 
-export { ChristianRadioRegistry };
+export { RADIO_SOURCE_STATUSES, WaveAtlasChristianWorshipStations as ChristianRadioRegistry, isVerifiedDirectAudioEndpoint };
