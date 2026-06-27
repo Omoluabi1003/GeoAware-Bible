@@ -401,6 +401,10 @@ function HomeContent({ walkTheWord }) {
       return { type: GEOGUIDE_INTENTS.readNearMe, slots: {}, source: 'typed_command', rawText: commandText };
     }
 
+    if (/^explore\s+(?:the\s+)?world$/.test(normalizedCommand)) {
+      return { type: GEOGUIDE_INTENTS.explorePlace, slots: { place: 'world' }, source: 'typed_command', rawText: commandText };
+    }
+
     const walkMatch = normalizedCommand.match(/^(?:walk|go)\s+to\s+(.+)$/);
     if (walkMatch) {
       const destination = walkMatch[1].trim();
@@ -437,7 +441,7 @@ function HomeContent({ walkTheWord }) {
       }
       case GEOGUIDE_ACTION_TYPES.explorePlace:
         setReadingMode(guideResult.action.payload.readingMode || 'explore_world');
-        return 'Opening this place.';
+        return guideResult.action.payload.placeType === 'world_placeholder' ? 'Opening Explore the World.' : 'Opening this place.';
       case GEOGUIDE_ACTION_TYPES.changeLanguage: {
         const languageCode = guideResult.action.payload.languageCode;
         if (languageCode === 'en') {
@@ -532,9 +536,9 @@ function HomeContent({ walkTheWord }) {
                   <button type="submit" aria-label="Follow GeoGuide command">Guide</button>
                   <button type="button" className="geoGuideCancel" onClick={closeGeoGuide} aria-label="Close GeoGuide">×</button>
                 </div>
-                {geoGuideResponse ? <p aria-live="polite">{geoGuideResponse}</p> : null}
               </div>
             )}
+            {geoGuideResponse ? <p aria-live="polite">{geoGuideResponse}</p> : null}
           </form>
 
         </div>
