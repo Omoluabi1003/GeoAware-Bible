@@ -330,7 +330,7 @@ function HomeContent({ walkTheWord }) {
 
   const renderPrimaryAction = () => {
     if (readingMode === 'read_near_me') {
-      return <button type="button" onClick={requestLocationFollow}>Use my location</button>;
+      return <button type="button" onClick={requestLocationFollow}>Update Location</button>;
     }
 
     if (readingMode === 'explore_world') {
@@ -411,7 +411,7 @@ function HomeContent({ walkTheWord }) {
         </button>
       </section>
 
-      <section className="pilgrimageControls" aria-label="Primary action">
+      <section className={`pilgrimageControls ${readingMode === 'read_near_me' ? 'readNearMeControls' : ''}`} aria-label="Primary action">
         <div>
           <p>{readingMode === 'walk_the_word' ? walkTheWord.journey?.title : selectedReadingModeLabel}</p>
           <strong>{readingMode === 'walk_the_word' && walkWaypoint ? walkWaypoint.title : displayedReference}</strong>
