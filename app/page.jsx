@@ -330,7 +330,15 @@ function HomeContent({ walkTheWord }) {
 
   const renderPrimaryAction = () => {
     if (readingMode === 'read_near_me') {
-      return <button type="button" onClick={requestLocationFollow}>Use my location</button>;
+      return (
+        <button
+          type="button"
+          className={hasLocationPermissionResponse ? 'subtleAction' : ''}
+          onClick={requestLocationFollow}
+        >
+          {hasLocationPermissionResponse ? 'Update location' : 'Use my location'}
+        </button>
+      );
     }
 
     if (readingMode === 'explore_world') {
@@ -399,15 +407,15 @@ function HomeContent({ walkTheWord }) {
       <section className="readingModes" aria-label="Reading modes">
         <button type="button" className={readingMode === 'read_near_me' ? 'active' : ''} onClick={() => selectReadingMode('read_near_me')}>
           <span>Read Near Me</span>
-          <small>{locationError || buildLocationLabel(profile, activeDetectedLocality)}</small>
+          <small>{locationError || `Map set to ${buildLocationLabel(profile, activeDetectedLocality)}`}</small>
         </button>
         <button type="button" className={readingMode === 'walk_the_word' ? 'active' : ''} onClick={() => selectReadingMode('walk_the_word')}>
           <span>Walk the Word</span>
-          <small>{walkTheWord.journey?.title || 'GeoNarrative pilgrimage'}</small>
+          <small>{walkTheWord.journey?.title || 'Pilgrimage route'}</small>
         </button>
         <button type="button" className={readingMode === 'explore_world' ? 'active' : ''} onClick={() => selectReadingMode('explore_world')}>
           <span>Explore the World</span>
-          <small>Quiet atlas coming soon</small>
+          <small>Browse Scripture by place</small>
         </button>
       </section>
 
