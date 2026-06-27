@@ -144,7 +144,7 @@ export const GeoNarrativeRegistry = Object.freeze({
     routeMetadata: { routeType: 'mixed_land_sea', certainty: 'scripture_attested_ordered_route', activeByDefault: false },
     narration: { status: 'placeholder', cuePrefix: 'paul_first', audioReady: false },
     languageHooks: { titleKey: 'geonarrative.paul_first_missionary_journey.title', summaryKey: 'geonarrative.paul_first_missionary_journey.summary' },
-    completionState: { status: 'registered_inactive', completedWaypointIds: [] },
+    completionState: { status: 'available', completedWaypointIds: [] },
     futureSyncChannels: Object.values(GEONARRATIVE_SYNC_CHANNELS),
     waypoints: [
       { id: 'antioch_syria_departure', latitude: 36.2021, longitude: 36.1613, title: 'Antioch', scriptureRefs: ['Acts 13:1-3'], sequence: 1, historicalSummary: 'The church at Antioch sends Barnabas and Saul after prayer and fasting.', estimatedTravelDuration: '1 day to Seleucia', synchronization: { narrationCueId: 'paul_first.antioch_departure', globeCameraCueId: 'camera.antioch_syria', beaconCueId: 'beacon.antioch_syria' } },
