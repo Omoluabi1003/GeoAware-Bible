@@ -243,6 +243,7 @@ function drawJourneyRoute(ctx, journeyRoute, radius, center, rotation, size, mot
 
   const activeWaypointIndex = Math.max(0, projectedWaypoints.findIndex(({ waypoint }) => waypoint.id === journeyRoute.activeWaypointId));
   const activePulse = 0.86 + ((motion?.framePulse || 1) * 0.14);
+  const journeyProgress = motion?.journeyProgress ?? activeWaypointIndex;
 
   ctx.save();
   ctx.globalCompositeOperation = 'screen';
@@ -255,20 +256,26 @@ function drawJourneyRoute(ctx, journeyRoute, radius, center, rotation, size, mot
     const controlX = (previous.x + projected.x) / 2;
     const controlY = Math.min(previous.y, projected.y) - (size * 0.07);
     const segmentIndex = waypointIndex - 1;
-    const isCompleted = segmentIndex < activeWaypointIndex;
-    const isActiveSegment = segmentIndex === activeWaypointIndex;
+    const segmentProgress = clamp(journeyProgress - segmentIndex, 0, 1);
+    const isCompleted = segmentProgress >= 1;
+    const isActiveSegment = segmentProgress > 0 && segmentProgress < 1;
 
     ctx.beginPath();
     ctx.moveTo(previous.x, previous.y);
     ctx.quadraticCurveTo(controlX, controlY, projected.x, projected.y);
-    ctx.strokeStyle = isCompleted ? 'rgba(247, 215, 122, .84)' : isActiveSegment ? `rgba(255, 239, 184, ${0.82 * activePulse})` : 'rgba(204, 176, 103, .44)';
+    ctx.strokeStyle = isCompleted ? 'rgba(247, 215, 122, .84)' : isActiveSegment ? `rgba(255, 239, 184, ${0.62 + (0.2 * activePulse)})` : 'rgba(204, 176, 103, .44)';
     ctx.lineWidth = Math.max(isActiveSegment ? 3.2 : 2.4, size * (isActiveSegment ? 0.0072 : 0.0058));
     if (isActiveSegment) {
       ctx.shadowColor = 'rgba(255, 232, 151, .46)';
       ctx.shadowBlur = Math.max(4, size * 0.012);
+      ctx.setLineDash([Math.max(5, size * 0.012), Math.max(4, size * 0.009)]);
+      ctx.lineDashOffset = -segmentProgress * size * 0.08;
     }
+    ctx.globalAlpha = isActiveSegment ? 0.56 + segmentProgress * 0.44 : 1;
     ctx.stroke();
+    ctx.globalAlpha = 1;
     if (isActiveSegment) {
+      ctx.setLineDash([]);
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
     }
@@ -492,7 +499,8 @@ export function RealEarthRenderer({
     isDragging: false,
     releasedAt: 0,
     autoTurn: 0,
-    lastFrameAt: 0
+    lastFrameAt: 0,
+    journeyProgress: 0
   });
   const reducedMotion = useReducedMotion();
   const [projectedBeacon, setProjectedBeacon] = useState({ x: 50, y: 50, visible: true, fade: 1 });
@@ -622,6 +630,7 @@ export function RealEarthRenderer({
         ? 1
         : Math.min(1, Math.max(0, (timeSinceRelease - AUTO_RESUME_DELAY_MS) / AUTO_RESUME_RAMP_MS));
       const autoMultiplier = interaction.isDragging || isTransitioning ? 0 : resumeProgress;
+      const targetJourneyProgress = Math.max(0, (journeyRoute?.waypoints || []).findIndex((waypoint) => waypoint.id === journeyRoute?.activeWaypointId));
 
       const rawFrameMs = interaction.lastFrameAt === 0 ? 16.7 : now - interaction.lastFrameAt;
       const frameSeconds = rawFrameMs / 1000;
@@ -657,6 +666,9 @@ export function RealEarthRenderer({
 
       if (!reducedMotion) {
         interaction.autoTurn += frameSeconds * EARTH_ROTATION_DEGREES_PER_SECOND * autoMultiplier;
+        interaction.journeyProgress += (targetJourneyProgress - interaction.journeyProgress) * Math.min(1, frameSeconds * 3.8);
+      } else {
+        interaction.journeyProgress = targetJourneyProgress;
       }
 
       const earthTurn = reducedMotion ? 0 : interaction.autoTurn;
@@ -665,7 +677,7 @@ export function RealEarthRenderer({
       const lightPhase = reducedMotion ? 0 : ((now - startedAt) / LIGHT_DRIFT_PERIOD_MS) * TWO_PI;
 
       const nextRotation = getInteractionRotation();
-      drawEarth(canvas, coordinates, nextRotation, { earthTurn, cloudTurn, lightPhase, framePulse }, activeCountryHighlight, journeyRoute);
+      drawEarth(canvas, coordinates, nextRotation, { earthTurn, cloudTurn, lightPhase, framePulse, journeyProgress: interaction.journeyProgress }, activeCountryHighlight, journeyRoute);
       updateBeacon(nextRotation);
       animationRef.current = window.requestAnimationFrame(renderFrame);
     };

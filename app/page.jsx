@@ -112,8 +112,10 @@ function buildLocationLabel(profile, detectedLocality) {
   return [profile.city, profile.state].filter(Boolean).join(', ') || profile.country || 'Location available';
 }
 
-function easeOutCubic(progress) {
-  return 1 - (1 - progress) ** 3;
+function easeInOutCubic(progress) {
+  return progress < 0.5
+    ? 4 * progress ** 3
+    : 1 - ((-2 * progress + 2) ** 3) / 2;
 }
 
 function resolveEarthCamera(profile, detectedCoordinates = null) {
@@ -129,7 +131,7 @@ function shortestRotationDelta(fromDegrees, toDegrees) {
 }
 
 function interpolateCamera(from, to, progress) {
-  const eased = easeOutCubic(progress);
+  const eased = easeInOutCubic(progress);
   const lerp = (start, end) => start + (end - start) * eased;
   const yawDelta = shortestRotationDelta(from.rotation.y, to.rotation.y);
 
@@ -190,6 +192,9 @@ function HomeContent({ walkTheWord }) {
   const cameraRef = useRef(targetEarthCamera);
   const [earthCamera, setEarthCamera] = useState(targetEarthCamera);
   const [isCameraTransitioning, setIsCameraTransitioning] = useState(false);
+  const [scriptureTransition, setScriptureTransition] = useState({ key: '', reference: '', text: '', className: '', summary: '', finePrint: '' });
+  const [isScriptureVisible, setIsScriptureVisible] = useState(true);
+  const scriptureTransitionTimerRef = useRef(null);
   const reducedMotion = useReducedMotion();
   const activeTranslation = useMemo(() => (
     getTranslation(GeoContext.effectiveTranslationId)
@@ -319,7 +324,41 @@ function HomeContent({ walkTheWord }) {
   const displayedReference = walkTheWord.isActive && walkWaypoint ? walkWaypointReferenceLabel : activeTranslation.reference;
   const walkWaypointSummary = walkWaypoint?.historicalSummary || '';
   const displayedText = activeTranslation.text;
+  const scriptureClassName = walkTheWord.isActive && walkWaypoint ? 'waypointDescription' : '';
+  const scriptureFinePrint = `${activeTranslation.name} · ${activeTranslation.language}`;
+  const scriptureKey = `${readingMode}:${walkWaypoint?.id || GeoContext.countryCode}:${displayedReference}:${displayedText}`;
   const selectedReadingModeLabel = readingMode === 'read_near_me' ? 'Read Near Me' : readingMode === 'walk_the_word' ? 'Walk the Word' : 'Explore the World';
+
+
+  useEffect(() => {
+    const nextScripture = {
+      key: scriptureKey,
+      reference: displayedReference,
+      text: displayedText,
+      className: scriptureClassName,
+      summary: walkWaypointSummary,
+      finePrint: scriptureFinePrint
+    };
+
+    if (!scriptureTransition.key || reducedMotion) {
+      setScriptureTransition(nextScripture);
+      setIsScriptureVisible(true);
+      return undefined;
+    }
+
+    if (scriptureTransition.key === scriptureKey) return undefined;
+
+    setIsScriptureVisible(false);
+    if (scriptureTransitionTimerRef.current) window.clearTimeout(scriptureTransitionTimerRef.current);
+    scriptureTransitionTimerRef.current = window.setTimeout(() => {
+      setScriptureTransition(nextScripture);
+      setIsScriptureVisible(true);
+    }, 180);
+
+    return () => {
+      if (scriptureTransitionTimerRef.current) window.clearTimeout(scriptureTransitionTimerRef.current);
+    };
+  }, [displayedReference, displayedText, reducedMotion, scriptureClassName, scriptureFinePrint, scriptureKey, scriptureTransition.key, walkWaypointSummary]);
 
   const selectReadingMode = (nextMode) => {
     setReadingMode(nextMode);
@@ -429,16 +468,16 @@ function HomeContent({ walkTheWord }) {
         ))}
       </section>
 
-      <section className="scriptureFlow" aria-label="Current Scripture">
-        <p className="scriptureReference">{displayedReference}</p>
-        <p className={`scriptureText ${walkTheWord.isActive && walkWaypoint ? 'waypointDescription' : ''}`}>{displayedText}</p>
-        {walkTheWord.isActive && walkWaypointSummary ? (
+      <section className={`scriptureFlow ${isScriptureVisible ? 'isVisible' : 'isDissolving'}`} aria-label="Current Scripture" aria-live="polite" aria-atomic="true">
+        <p className="scriptureReference">{scriptureTransition.reference}</p>
+        <p className={`scriptureText ${scriptureTransition.className}`}>{scriptureTransition.text}</p>
+        {scriptureTransition.summary ? (
           <details className="placeDisclosure">
             <summary>About this place</summary>
-            <p>{walkWaypointSummary}</p>
+            <p>{scriptureTransition.summary}</p>
           </details>
         ) : null}
-        <p className="scriptureFinePrint">{activeTranslation.name} · {activeTranslation.language}</p>
+        <p className="scriptureFinePrint">{scriptureTransition.finePrint}</p>
       </section>
     </main>
   );
