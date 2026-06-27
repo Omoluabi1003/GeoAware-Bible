@@ -1,5 +1,6 @@
 import { scriptureLanguages } from './scriptureLanguageRegistry.js';
 import { geoNarrativeList } from './journeyRegistry.js';
+import { geoTimelineEraList } from './geoTimelineRegistry.js';
 
 export const GEO_LAYER_TYPES = Object.freeze({
   scripture: 'scripture',
@@ -8,7 +9,8 @@ export const GEO_LAYER_TYPES = Object.freeze({
   christianRadio: 'christianRadio',
   pilgrimage: 'pilgrimage',
   prayer: 'prayer',
-  archaeology: 'archaeology'
+  archaeology: 'archaeology',
+  timeline: 'timeline'
 });
 
 export const SOURCE_STATUS = Object.freeze({
@@ -89,6 +91,7 @@ const biblicalJourneyLayer = Object.freeze({
     languageHooks: journey.languageHooks,
     completionState: journey.completionState,
     futureSyncChannels: journey.futureSyncChannels,
+    timelineEraId: journey.timelineEraId,
     waypoints: journey.waypoints.map((waypoint) => ({
       id: waypoint.id,
       title: waypoint.title,
@@ -133,6 +136,29 @@ const christianRadioLayer = Object.freeze({
   ])
 });
 
+
+const timelineLayer = Object.freeze({
+  id: 'geo-timeline',
+  type: GEO_LAYER_TYPES.timeline,
+  title: 'GeoTimeline',
+  description: 'Internal canonical Bible-era timeline foundation for future map and narrative alignment; no UI control is exposed yet.',
+  toggleReady: false,
+  records: Object.freeze(geoTimelineEraList.map((era) => freezeRecord({
+    id: era.id,
+    layerType: GEO_LAYER_TYPES.timeline,
+    lat: null,
+    lon: null,
+    coordinates: { latitude: null, longitude: null },
+    title: era.title,
+    description: era.summary,
+    scriptureRefs: era.scriptureRefs,
+    languageCodes: [],
+    sourceStatus: SOURCE_STATUS.derivedFromRegistry,
+    dateRange: era.dateRange,
+    narrativeIds: era.narrativeIds
+  })))
+});
+
 function emptyLayer(id, type, title, description) {
   return Object.freeze({ id, type, title, description, toggleReady: true, records: Object.freeze([]) });
 }
@@ -144,7 +170,8 @@ export const GeoLayerRegistry = Object.freeze({
   [GEO_LAYER_TYPES.christianRadio]: christianRadioLayer,
   [GEO_LAYER_TYPES.pilgrimage]: emptyLayer('pilgrimage', GEO_LAYER_TYPES.pilgrimage, 'Pilgrimage Intelligence', 'Future pilgrimage-safe intelligence layer.'),
   [GEO_LAYER_TYPES.prayer]: emptyLayer('prayer', GEO_LAYER_TYPES.prayer, 'Prayer', 'Future prayer geography layer.'),
-  [GEO_LAYER_TYPES.archaeology]: emptyLayer('archaeology', GEO_LAYER_TYPES.archaeology, 'Archaeology', 'Future archaeology layer requiring vetted sources.')
+  [GEO_LAYER_TYPES.archaeology]: emptyLayer('archaeology', GEO_LAYER_TYPES.archaeology, 'Archaeology', 'Future archaeology layer requiring vetted sources.'),
+  [GEO_LAYER_TYPES.timeline]: timelineLayer
 });
 
 export const geoLayerList = Object.freeze(Object.values(GeoLayerRegistry));

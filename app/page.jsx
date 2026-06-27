@@ -181,7 +181,6 @@ function HomeContent({ walkTheWord }) {
   const [isGeoGuideExpanded, setIsGeoGuideExpanded] = useState(false);
   const [geoGuideResponse, setGeoGuideResponse] = useState('');
   const geoGuideInputRef = useRef(null);
-  const quietWorshipAudioRef = useRef(null);
   const geoGuideSuggestions = useMemo(() => {
     return GEONARRATIVE_STUDIO_SUGGESTED_PROMPTS.slice(0, 3);
   }, []);
@@ -368,58 +367,6 @@ function HomeContent({ walkTheWord }) {
     walkWaypointSummary
   ]);
   const selectedReadingModeLabel = readingMode === 'read_near_me' ? 'Read Near Me' : readingMode === 'walk_the_word' ? 'Walk the Word' : 'Explore the World';
-  const worshipSuggestion = readingMode === 'read_near_me' ? geoContext.worshipSuggestion : null;
-  const quietWorshipStreamUrl = worshipSuggestion?.isPlayable && worshipSuggestion.stream?.status === 'verified' ? worshipSuggestion.streamUrl : '';
-  const [quietWorshipPlayingUrl, setQuietWorshipPlayingUrl] = useState('');
-  const isQuietWorshipPlaying = Boolean(quietWorshipStreamUrl && quietWorshipPlayingUrl === quietWorshipStreamUrl);
-
-  const releaseQuietWorshipAudio = useCallback((audio = quietWorshipAudioRef.current) => {
-    if (!audio) return;
-    audio.pause();
-    audio.removeAttribute('src');
-    audio.load();
-  }, []);
-
-  const setQuietWorshipAudioRef = useCallback((audio) => {
-    if (quietWorshipAudioRef.current && quietWorshipAudioRef.current !== audio) {
-      releaseQuietWorshipAudio(quietWorshipAudioRef.current);
-    }
-    quietWorshipAudioRef.current = audio;
-  }, [releaseQuietWorshipAudio]);
-
-  useEffect(() => {
-    const audio = quietWorshipAudioRef.current;
-    if (audio && audio.src !== quietWorshipStreamUrl) {
-      releaseQuietWorshipAudio(audio);
-    }
-    setQuietWorshipPlayingUrl('');
-  }, [quietWorshipStreamUrl, releaseQuietWorshipAudio]);
-
-  useEffect(() => () => {
-    releaseQuietWorshipAudio();
-  }, [releaseQuietWorshipAudio]);
-
-  const toggleQuietWorshipPlayback = () => {
-    const audio = quietWorshipAudioRef.current;
-    if (!audio || !quietWorshipStreamUrl) return;
-
-    if (isQuietWorshipPlaying) {
-      audio.pause();
-      setQuietWorshipPlayingUrl('');
-      return;
-    }
-
-    audio.src = quietWorshipStreamUrl;
-    setQuietWorshipPlayingUrl(quietWorshipStreamUrl);
-    audio.play()
-      .catch(() => {
-        if (audio.src === quietWorshipStreamUrl) {
-          releaseQuietWorshipAudio(audio);
-        }
-        setQuietWorshipPlayingUrl('');
-      });
-  };
-
   useEffect(() => {
     const nextScripture = {
       key: scriptureKey,
@@ -715,33 +662,6 @@ function HomeContent({ walkTheWord }) {
             <summary>About this place</summary>
             <p>{scriptureTransition.summary}</p>
           </details>
-        ) : null}
-        {worshipSuggestion ? (
-          <aside className="quietWorshipSuggestion" aria-label="Quiet worship suggestion">
-            <span>Quiet worship</span>
-            <strong>{worshipSuggestion.stationName}</strong>
-            <small>{worshipSuggestion.city ? `${worshipSuggestion.city} • ` : ''}{worshipSuggestion.country}</small>
-            {worshipSuggestion.isPlayable && worshipSuggestion.streamUrl ? (
-              <>
-                <button
-                  type="button"
-                  className="quietWorshipListen"
-                  onClick={toggleQuietWorshipPlayback}
-                  aria-label={`${isQuietWorshipPlaying ? 'Pause' : 'Play'} ${worshipSuggestion.stationName} inside GeoAware Bible`}
-                >
-                  {isQuietWorshipPlaying ? 'Pause' : 'Play'}
-                </button>
-                <audio
-                  ref={setQuietWorshipAudioRef}
-                  preload="none"
-                  onPause={() => setQuietWorshipPlayingUrl('')}
-                  onEnded={() => setQuietWorshipPlayingUrl('')}
-                />
-              </>
-            ) : (
-              <small className="quietWorshipInfo">Suggestion only</small>
-            )}
-          </aside>
         ) : null}
       </section>
     </main>
