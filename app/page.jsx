@@ -411,7 +411,7 @@ function HomeContent({ walkTheWord }) {
         </button>
       </section>
 
-      <section className={`pilgrimageControls ${readingMode === 'read_near_me' ? 'readNearMeControls' : ''}`} aria-label="Primary action">
+      <section className={`pilgrimageControls${readingMode === 'read_near_me' ? ' readNearMeControls' : ''}`} aria-label="Primary action">
         <div>
           <p>{readingMode === 'walk_the_word' ? walkTheWord.journey?.title : selectedReadingModeLabel}</p>
           <strong>{readingMode === 'walk_the_word' && walkWaypoint ? walkWaypoint.title : displayedReference}</strong>
