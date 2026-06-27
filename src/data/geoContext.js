@@ -121,10 +121,7 @@ export function resolveGeoContext(input = {}) {
     summary: `Detected: ${[city, region].filter(Boolean).join(', ') || country} • ${recommendedLanguage}${languageRegionLabel} recommended`,
     worshipSuggestion,
     worshipSuggestions: Object.freeze(worshipSuggestion ? [worshipSuggestion] : []),
-    futureContextHooks: Object.freeze({
-      ...model.contextMetadata,
-      nearbyChristianRadioStations: getChristianRadioStations(model.isoCode)
-    })
+    futureContextHooks: model.contextMetadata
   });
 }
 

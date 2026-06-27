@@ -186,7 +186,7 @@ function HomeContent({ walkTheWord }) {
   }, []);
   const activeDetectedCoordinates = mode === 'geo' ? detectedCoordinates : null;
   const activeDetectedLocality = mode === 'geo' ? detectedLocality : null;
-  const GeoContext = useMemo(() => resolveGeoContext({
+  const geoContext = useMemo(() => resolveGeoContext({
     countryCode,
     coordinates: activeDetectedCoordinates,
     locality: activeDetectedLocality,
@@ -194,13 +194,13 @@ function HomeContent({ walkTheWord }) {
     browserLanguages: typeof navigator === 'undefined' ? [] : navigator.languages
   }), [countryCode, activeDetectedCoordinates, activeDetectedLocality, mode]);
   const geoGuide = useMemo(() => createGeoGuideResolver({
-    countryCode: GeoContext.countryCode,
+    countryCode: geoContext.countryCode,
     coordinates: activeDetectedCoordinates,
     locality: activeDetectedLocality,
     stayInEnglish: mode === 'fixed',
     browserLanguages: typeof navigator === 'undefined' ? [] : navigator.languages
-  }), [GeoContext.countryCode, activeDetectedCoordinates, activeDetectedLocality, mode]);
-  const profile = languageProfiles[GeoContext.countryCode] || languageProfiles.US;
+  }), [geoContext.countryCode, activeDetectedCoordinates, activeDetectedLocality, mode]);
+  const profile = languageProfiles[geoContext.countryCode] || languageProfiles.US;
   const walkWaypoint = walkTheWord.activeWaypoint;
   const walkWaypointCoordinates = readingMode === 'walk_the_word' ? walkWaypoint?.coordinates || null : null;
   const walkJourneyRoute = useMemo(() => (readingMode === 'walk_the_word' && walkTheWord.isActive ? {
@@ -218,8 +218,8 @@ function HomeContent({ walkTheWord }) {
   const scriptureTransitionTimerRef = useRef(null);
   const reducedMotion = useReducedMotion();
   const activeTranslation = useMemo(() => (
-    getTranslation(GeoContext.effectiveTranslationId)
-  ), [GeoContext.effectiveTranslationId]);
+    getTranslation(geoContext.effectiveTranslationId)
+  ), [geoContext.effectiveTranslationId]);
   const countries = Object.entries(languageProfiles);
   const openGeoGuide = () => setIsGeoGuideExpanded(true);
   const closeGeoGuide = () => {
@@ -236,7 +236,7 @@ function HomeContent({ walkTheWord }) {
       ? `${profile.flag} ${locationLabel} recognized`
       : arrivalStep === 'preparing'
         ? `Preparing Scripture for ${locationLabel}`
-        : `Scripture ready in ${GeoContext.effectiveLanguage}`;
+        : `Scripture ready in ${geoContext.effectiveLanguage}`;
 
   useEffect(() => {
     setArrivalStep('finding');
@@ -360,14 +360,14 @@ function HomeContent({ walkTheWord }) {
     : '';
   const scriptureKey = buildScriptureTransitionKey([
     readingMode,
-    walkWaypoint?.id || GeoContext.countryCode,
+    walkWaypoint?.id || geoContext.countryCode,
     displayedReference,
     displayedText,
     scriptureContextLine,
     walkWaypointSummary
   ]);
   const selectedReadingModeLabel = readingMode === 'read_near_me' ? 'Read Near Me' : readingMode === 'walk_the_word' ? 'Walk the Word' : 'Explore the World';
-  const worshipSuggestion = readingMode === 'read_near_me' ? GeoContext.worshipSuggestion : null;
+  const worshipSuggestion = readingMode === 'read_near_me' ? geoContext.worshipSuggestion : null;
 
 
   useEffect(() => {
@@ -593,7 +593,7 @@ function HomeContent({ walkTheWord }) {
         <ProjectEarthRenderer
           coordinates={earthCamera.coordinates}
           rotation={earthCamera.rotation}
-          signalLabel={`${GeoContext.country} Scripture setting`}
+          signalLabel={`${geoContext.country} Scripture setting`}
           activeLocationLabel={locationLabel}
           activeCountryHighlight={profile.countryHighlight}
           isTransitioning={isCameraTransitioning}
@@ -671,6 +671,11 @@ function HomeContent({ walkTheWord }) {
             <span>Quiet worship</span>
             <strong>{worshipSuggestion.stationName}</strong>
             <small>{worshipSuggestion.city ? `${worshipSuggestion.city} • ` : ''}{worshipSuggestion.country}</small>
+            {worshipSuggestion.isPlayable && worshipSuggestion.streamUrl ? (
+              <a className="quietWorshipListen" href={worshipSuggestion.streamUrl} target="_blank" rel="noreferrer" aria-label={`Listen to ${worshipSuggestion.stationName}`}>Listen</a>
+            ) : (
+              <small className="quietWorshipInfo">Suggestion only</small>
+            )}
           </aside>
         ) : null}
       </section>
