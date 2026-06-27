@@ -318,7 +318,7 @@ function HomeContent({ walkTheWord }) {
   const walkWaypointReferenceLabel = walkWaypoint?.waypointRole === 'route_context' ? 'Approximate route context' : walkWaypoint?.scriptureRefs[0];
   const displayedReference = walkTheWord.isActive && walkWaypoint ? walkWaypointReferenceLabel : activeTranslation.reference;
   const walkWaypointSummary = walkWaypoint?.historicalSummary || '';
-  const displayedText = walkTheWord.isActive && walkWaypointSummary ? walkWaypointSummary : activeTranslation.text;
+  const displayedText = activeTranslation.text;
   const selectedReadingModeLabel = readingMode === 'read_near_me' ? 'Read Near Me' : readingMode === 'walk_the_word' ? 'Walk the Word' : 'Explore the World';
 
   const selectReadingMode = (nextMode) => {
@@ -357,6 +357,10 @@ function HomeContent({ walkTheWord }) {
       <section className="heroGrid">
         <div className="heroCopy">
           <h1>God's Word. Wherever you are.</h1>
+          <div className="modeSwitch" aria-label="Scripture generation mode">
+            <button type="button" className={mode === 'geo' ? 'active' : ''} onClick={requestLocationFollow}>Near me</button>
+            <button type="button" className={mode === 'fixed' ? 'active' : ''} onClick={() => { setMode('fixed'); setLocationError(''); }}>Generative</button>
+          </div>
         </div>
 
         <ProjectEarthRenderer
@@ -428,6 +432,12 @@ function HomeContent({ walkTheWord }) {
       <section className="scriptureFlow" aria-label="Current Scripture">
         <p className="scriptureReference">{displayedReference}</p>
         <p className={`scriptureText ${walkTheWord.isActive && walkWaypoint ? 'waypointDescription' : ''}`}>{displayedText}</p>
+        {walkTheWord.isActive && walkWaypointSummary ? (
+          <details className="placeDisclosure">
+            <summary>About this place</summary>
+            <p>{walkWaypointSummary}</p>
+          </details>
+        ) : null}
         <p className="scriptureFinePrint">{activeTranslation.name} · {activeTranslation.language}</p>
       </section>
     </main>
