@@ -22,6 +22,15 @@ const registry = {
   },
   JP: {
     isoCode: 'JP', country: 'Japan', region: 'East Asia', continent: 'Asia', flag: '🇯🇵', city: 'Tokyo', primaryLanguageCode: 'ja', supportedLanguageCodes: ['ja', 'en'], translationId: 'sample-ja', alternates: ['English'], coordinates: { latitude: 36.2048, longitude: 138.2529 }, countryHighlight: { latitude: 37.5, longitude: 137.7, radiusLatitude: 7.4, radiusLongitude: 3.3, tilt: 24 }, timezone: 'Asia/Tokyo', hemisphere: { latitudinal: 'Northern', longitudinal: 'Eastern' }, bounds: { minLatitude: 24, maxLatitude: 46, minLongitude: 122, maxLongitude: 146 }, prayer: 'May quiet strength, peace, and the light of truth rest upon Japan.'
+  },
+  IL: {
+    isoCode: 'IL', country: 'Israel', region: 'Middle East', continent: 'Asia', flag: '🇮🇱', city: 'Jerusalem', primaryLanguageCode: 'he', supportedLanguageCodes: ['he', 'en', 'ar'], translationId: 'web', alternates: ['English', 'Arabic'], coordinates: { latitude: 31.0461, longitude: 34.8516 }, countryHighlight: { latitude: 31.4, longitude: 35, radiusLatitude: 2.4, radiusLongitude: 1.2, tilt: 10 }, timezone: 'Asia/Jerusalem', hemisphere: { latitudinal: 'Northern', longitudinal: 'Eastern' }, bounds: { minLatitude: 29.4, maxLatitude: 33.4, minLongitude: 34.2, maxLongitude: 35.9 }, prayer: 'May peace, mercy, and reconciliation be near to every household in Israel.'
+  },
+  GR: {
+    isoCode: 'GR', country: 'Greece', region: 'Southern Europe', continent: 'Europe', flag: '🇬🇷', city: 'Athens', primaryLanguageCode: 'el', supportedLanguageCodes: ['el', 'en'], translationId: 'web', alternates: ['English'], coordinates: { latitude: 39.0742, longitude: 21.8243 }, countryHighlight: { latitude: 39.1, longitude: 22, radiusLatitude: 4.4, radiusLongitude: 3.6, tilt: 14 }, timezone: 'Europe/Athens', hemisphere: { latitudinal: 'Northern', longitudinal: 'Eastern' }, bounds: { minLatitude: 34.7, maxLatitude: 41.8, minLongitude: 19.3, maxLongitude: 29.7 }, prayer: 'May grace and enduring hope shine across Greece and its islands.'
+  },
+  TR: {
+    isoCode: 'TR', country: 'Türkiye', region: 'Anatolia', continent: 'Asia', flag: '🇹🇷', city: 'Ankara', primaryLanguageCode: 'tr', supportedLanguageCodes: ['tr', 'en'], translationId: 'web', alternates: ['English'], coordinates: { latitude: 38.9637, longitude: 35.2433 }, countryHighlight: { latitude: 39, longitude: 35.2, radiusLatitude: 4.9, radiusLongitude: 8.4, tilt: 9 }, timezone: 'Europe/Istanbul', hemisphere: { latitudinal: 'Northern', longitudinal: 'Eastern' }, bounds: { minLatitude: 35.8, maxLatitude: 42.1, minLongitude: 25.6, maxLongitude: 44.8 }, prayer: 'May kindness, courage, and the light of Christ bring renewal across Türkiye.'
   }
 };
 
