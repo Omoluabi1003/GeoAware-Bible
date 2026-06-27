@@ -351,8 +351,17 @@ function HomeContent({ walkTheWord }) {
   const walkWaypointSummary = isWalkScriptureActive ? walkWaypoint?.historicalSummary || '' : '';
   const displayedText = activeTranslation.text;
   const scriptureClassName = isWalkScriptureActive ? 'waypointDescription' : '';
-  const scriptureContextLine = isWalkScriptureActive ? `${walkTheWord.journey?.title || 'Walk the Word'} • ${walkWaypoint.title}` : '';
-  const scriptureKey = `${readingMode}:${walkWaypoint?.id || GeoContext.countryCode}:${displayedReference}:${displayedText}`;
+  const scriptureContextLine = isWalkScriptureActive
+    ? [walkTheWord.journey?.title || 'Walk the Word', walkWaypoint?.title].filter(Boolean).join(' • ')
+    : '';
+  const scriptureKey = [
+    readingMode,
+    walkWaypoint?.id || GeoContext.countryCode,
+    displayedReference,
+    displayedText,
+    scriptureContextLine,
+    walkWaypointSummary,
+  ].filter(Boolean).join(':');
   const selectedReadingModeLabel = readingMode === 'read_near_me' ? 'Read Near Me' : readingMode === 'walk_the_word' ? 'Walk the Word' : 'Explore the World';
 
 
