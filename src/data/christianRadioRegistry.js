@@ -43,6 +43,8 @@ export function resolveChristianRadioSuggestion(geoContext = {}) {
   const station = stations[0] || null;
   if (!station) return null;
 
+  const hasVerifiedStream = Boolean(station.streamUrl);
+
   return Object.freeze({
     id: station.id,
     type: 'quiet_worship_radio',
@@ -52,8 +54,10 @@ export function resolveChristianRadioSuggestion(geoContext = {}) {
     country: station.country,
     city: station.city,
     languageCodes: station.languageCodes,
-    href: station.streamUrl,
+    href: hasVerifiedStream ? station.streamUrl : null,
+    streamUrl: hasVerifiedStream ? station.streamUrl : null,
     description: station.description,
+    isPlayable: hasVerifiedStream,
     playerReady: false
   });
 }
