@@ -173,7 +173,9 @@ function HomeContent({ walkTheWord }) {
   const [locationRequestKey, setLocationRequestKey] = useState(0);
   const [hasLocationPermissionResponse, setHasLocationPermissionResponse] = useState(false);
   const [geoGuideCommand, setGeoGuideCommand] = useState('');
-  const [geoGuideResponse, setGeoGuideResponse] = useState('Where shall we go today?');
+  const [isGeoGuideExpanded, setIsGeoGuideExpanded] = useState(false);
+  const [geoGuideResponse, setGeoGuideResponse] = useState('');
+  const geoGuideInputRef = useRef(null);
   const activeDetectedCoordinates = mode === 'geo' ? detectedCoordinates : null;
   const activeDetectedLocality = mode === 'geo' ? detectedLocality : null;
   const GeoContext = useMemo(() => resolveGeoContext({
@@ -211,6 +213,12 @@ function HomeContent({ walkTheWord }) {
     getTranslation(GeoContext.effectiveTranslationId)
   ), [GeoContext.effectiveTranslationId]);
   const countries = Object.entries(languageProfiles);
+  const openGeoGuide = () => setIsGeoGuideExpanded(true);
+  const closeGeoGuide = () => {
+    setIsGeoGuideExpanded(false);
+    setGeoGuideCommand('');
+    setGeoGuideResponse('');
+  };
   const locationLabel = walkWaypoint?.title || buildLocationLabel(profile, activeDetectedLocality);
 
 
@@ -371,6 +379,12 @@ function HomeContent({ walkTheWord }) {
     };
   }, [displayedReference, displayedText, reducedMotion, scriptureClassName, scriptureKey, scriptureTransition.key, walkWaypointSummary]);
 
+
+  useEffect(() => {
+    if (!isGeoGuideExpanded) return;
+    geoGuideInputRef.current?.focus();
+  }, [isGeoGuideExpanded]);
+
   const selectReadingMode = (nextMode) => {
     setReadingMode(nextMode);
     if (nextMode === 'read_near_me') {
@@ -443,6 +457,10 @@ function HomeContent({ walkTheWord }) {
 
   const submitGeoGuideCommand = (event) => {
     event.preventDefault();
+    if (!isGeoGuideExpanded) {
+      openGeoGuide();
+      return;
+    }
     const intent = parseGeoGuideCommand(geoGuideCommand);
     if (!intent) {
       setGeoGuideResponse('Try “read near me” or “walk to Bethlehem.”');
@@ -457,6 +475,7 @@ function HomeContent({ walkTheWord }) {
 
     setGeoGuideResponse(applyGeoGuideAction(guideResult));
     setGeoGuideCommand('');
+    setIsGeoGuideExpanded(false);
   };
 
   const renderPrimaryAction = () => {
@@ -492,20 +511,30 @@ function HomeContent({ walkTheWord }) {
             <button type="button" className={mode === 'geo' ? 'active' : ''} onClick={requestLocationFollow}>Near me</button>
             <button type="button" className={mode === 'fixed' ? 'active' : ''} onClick={() => { setMode('fixed'); setLocationError(''); }}>Generative</button>
           </div>
-          <form className="geoGuideCommand" onSubmit={submitGeoGuideCommand} aria-label="GeoGuide typed command">
-            <label htmlFor="geoGuideCommandInput">Where shall we go today?</label>
-            <div className="geoGuideInputRow">
-              <input
-                id="geoGuideCommandInput"
-                type="text"
-                value={geoGuideCommand}
-                onChange={(event) => setGeoGuideCommand(event.target.value)}
-                placeholder="read near me"
-                autoComplete="off"
-              />
-              <button type="submit" aria-label="Follow GeoGuide command">Guide</button>
-            </div>
-            <p aria-live="polite">{geoGuideResponse}</p>
+          <form className={`geoGuideCommand ${isGeoGuideExpanded ? 'isExpanded' : ''}`} onSubmit={submitGeoGuideCommand} aria-label="GeoGuide typed command">
+            {!isGeoGuideExpanded ? (
+              <button type="button" className="geoGuideTrigger" onClick={openGeoGuide} aria-expanded="false" aria-controls="geoGuideCommandControls">
+                Where shall we go today?
+              </button>
+            ) : (
+              <div id="geoGuideCommandControls" className="geoGuideExpandedPanel">
+                <label htmlFor="geoGuideCommandInput">Where shall we go today?</label>
+                <div className="geoGuideInputRow">
+                  <input
+                    ref={geoGuideInputRef}
+                    id="geoGuideCommandInput"
+                    type="text"
+                    value={geoGuideCommand}
+                    onChange={(event) => setGeoGuideCommand(event.target.value)}
+                    placeholder=""
+                    autoComplete="off"
+                  />
+                  <button type="submit" aria-label="Follow GeoGuide command">Guide</button>
+                  <button type="button" className="geoGuideCancel" onClick={closeGeoGuide} aria-label="Close GeoGuide">×</button>
+                </div>
+                {geoGuideResponse ? <p aria-live="polite">{geoGuideResponse}</p> : null}
+              </div>
+            )}
           </form>
 
         </div>
