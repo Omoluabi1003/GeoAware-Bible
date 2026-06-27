@@ -192,7 +192,7 @@ function HomeContent({ walkTheWord }) {
   const cameraRef = useRef(targetEarthCamera);
   const [earthCamera, setEarthCamera] = useState(targetEarthCamera);
   const [isCameraTransitioning, setIsCameraTransitioning] = useState(false);
-  const [scriptureTransition, setScriptureTransition] = useState({ key: '', reference: '', text: '', className: '', summary: '', finePrint: '' });
+  const [scriptureTransition, setScriptureTransition] = useState({ key: '', reference: '', text: '', className: '', summary: '' });
   const [isScriptureVisible, setIsScriptureVisible] = useState(true);
   const scriptureTransitionTimerRef = useRef(null);
   const reducedMotion = useReducedMotion();
@@ -325,7 +325,6 @@ function HomeContent({ walkTheWord }) {
   const walkWaypointSummary = walkWaypoint?.historicalSummary || '';
   const displayedText = activeTranslation.text;
   const scriptureClassName = walkTheWord.isActive && walkWaypoint ? 'waypointDescription' : '';
-  const scriptureFinePrint = `${activeTranslation.name} · ${activeTranslation.language}`;
   const scriptureKey = `${readingMode}:${walkWaypoint?.id || GeoContext.countryCode}:${displayedReference}:${displayedText}`;
   const selectedReadingModeLabel = readingMode === 'read_near_me' ? 'Read Near Me' : readingMode === 'walk_the_word' ? 'Walk the Word' : 'Explore the World';
 
@@ -337,7 +336,6 @@ function HomeContent({ walkTheWord }) {
       text: displayedText,
       className: scriptureClassName,
       summary: walkWaypointSummary,
-      finePrint: scriptureFinePrint
     };
 
     if (!scriptureTransition.key || reducedMotion) {
@@ -358,7 +356,7 @@ function HomeContent({ walkTheWord }) {
     return () => {
       if (scriptureTransitionTimerRef.current) window.clearTimeout(scriptureTransitionTimerRef.current);
     };
-  }, [displayedReference, displayedText, reducedMotion, scriptureClassName, scriptureFinePrint, scriptureKey, scriptureTransition.key, walkWaypointSummary]);
+  }, [displayedReference, displayedText, reducedMotion, scriptureClassName, scriptureKey, scriptureTransition.key, walkWaypointSummary]);
 
   const selectReadingMode = (nextMode) => {
     setReadingMode(nextMode);
@@ -477,7 +475,6 @@ function HomeContent({ walkTheWord }) {
             <p>{scriptureTransition.summary}</p>
           </details>
         ) : null}
-        <p className="scriptureFinePrint">{scriptureTransition.finePrint}</p>
       </section>
     </main>
   );
