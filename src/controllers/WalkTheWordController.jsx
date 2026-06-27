@@ -6,6 +6,7 @@ import { getGeoNarrative, geoNarrativeList } from '../data/geoNarrativeRegistry.
 
 export const WALK_THE_WORD_JOURNEY_ID = 'journey_to_bethlehem';
 const AUTO_WALK_WAYPOINT_PAUSE_MS = 2600;
+const SESSION_SELECTED_GEONARRATIVE_KEY = 'geoaware.selectedGeoNarrativeId';
 
 export function resolveRegisteredJourneyId(nextJourneyId) {
   return getGeoNarrative(nextJourneyId)?.id || WALK_THE_WORD_JOURNEY_ID;
@@ -15,8 +16,18 @@ function isRegisteredGeoNarrativeId(nextJourneyId) {
   return Boolean(getGeoNarrative(nextJourneyId));
 }
 
+function readStoredJourneyId(fallbackJourneyId) {
+  if (typeof window === 'undefined') return resolveRegisteredJourneyId(fallbackJourneyId);
+  return resolveRegisteredJourneyId(window.sessionStorage.getItem(SESSION_SELECTED_GEONARRATIVE_KEY) || fallbackJourneyId);
+}
+
+function storeSelectedJourneyId(nextJourneyId) {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.setItem(SESSION_SELECTED_GEONARRATIVE_KEY, nextJourneyId);
+}
+
 export function useWalkTheWordController({ journeyId = WALK_THE_WORD_JOURNEY_ID } = {}) {
-  const [selectedJourneyId, setSelectedJourneyId] = useState(() => resolveRegisteredJourneyId(journeyId));
+  const [selectedJourneyId, setSelectedJourneyId] = useState(() => readStoredJourneyId(journeyId));
   const [isActive, setIsActive] = useState(false);
   const [waypointIndex, setWaypointIndex] = useState(0);
   const [isAutoWalking, setIsAutoWalking] = useState(false);
@@ -55,6 +66,7 @@ export function useWalkTheWordController({ journeyId = WALK_THE_WORD_JOURNEY_ID 
       if (!isRegisteredGeoNarrativeId(nextJourneyId)) return;
       const resolvedJourneyId = resolveRegisteredJourneyId(nextJourneyId);
       setSelectedJourneyId(resolvedJourneyId);
+      storeSelectedJourneyId(resolvedJourneyId);
       setWaypointIndex(0);
       setIsAutoWalking(false);
     },

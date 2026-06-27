@@ -59,3 +59,21 @@ p{color:var(--muted);line-height:1.48}
 @keyframes waypointDissolveIn{0%{opacity:0;transform:scale(.72)}100%{opacity:1;transform:scale(1)}}
 @keyframes routeProgressFlow{0%,100%{stroke-dasharray:1.2 1.6;stroke-dashoffset:0}50%{stroke-dasharray:1.8 1.1;stroke-dashoffset:-2.4}}
 @media(prefers-reduced-motion:reduce){.activeLocationLabel,.journeyWaypointMarker,.journeyRoutePath,.scriptureFlow{transition:none!important;animation:none!important;transform:translate(-50%,-50%) scale(1);filter:none}.scriptureFlow{transform:none}.scriptureFlow.isDissolving{opacity:1;filter:none}.journeyRoutePath[data-state="active"]{stroke-dasharray:none}}
+
+/* PR72 GeoNarrative experience polish: cleaner Scripture endpoint and gentler atlas motion. */
+.beacon{width:15px;height:15px;box-shadow:0 0 10px rgba(247,215,122,.72),0 0 22px rgba(32,209,143,.34),0 0 38px rgba(247,215,122,.12);animation-duration:6.4s}
+.beacon[data-ready="true"]{box-shadow:0 0 14px rgba(255,232,151,.78),0 0 28px rgba(32,209,143,.42),0 0 48px rgba(247,215,122,.16)}
+.beacon span{inset:-28px;animation-duration:5.8s;background:radial-gradient(circle,rgba(255,239,184,.16),rgba(32,209,143,.085) 38%,rgba(84,170,245,.04) 58%,transparent 72%)}
+.beacon:before{inset:-11px;animation-duration:6.2s;border-color:rgba(255,232,151,.24)}
+.beacon:after{inset:-48px;animation-duration:7.2s;background:radial-gradient(circle,rgba(247,215,122,.095),rgba(32,209,143,.052) 40%,rgba(84,170,245,.028) 61%,transparent 76%)}
+.journeyWaypointMarker{opacity:.72;transition:opacity .52s ease,transform .52s ease,filter .52s ease}
+.journeyWaypointMarker[data-state="active"]{opacity:.96;animation:waypointDissolveIn .72s ease both}
+.journeyWaypointMarker[data-state="next"]{opacity:.82}
+.journeyRoutePath{transition:stroke-opacity .52s ease,stroke-width .52s ease,filter .52s ease}
+.journeyRoutePath[data-state="active"]{animation:routeProgressFlow 4.8s ease-in-out infinite,routeSegmentAlive 4.2s ease-in-out infinite}
+.scriptureFlow{margin-top:clamp(14px,2.6vh,30px);padding-bottom:clamp(18px,4vh,44px);transition:opacity .24s ease,transform .24s ease,filter .24s ease}
+.scriptureFlow.isDissolving{opacity:0;transform:translate3d(0,4px,0);filter:blur(3px)}
+.scriptureText{max-width:18em;margin-left:auto!important;margin-right:auto!important}
+.geoNarrativeSelector:after{content:"⌄";right:-6px;color:rgba(255,232,151,.82)}
+@media(max-width:640px){.scriptureFlow{width:min(100%,calc(100% - 18px));margin-top:14px;padding-bottom:max(30px,env(safe-area-inset-bottom));}.scriptureText{font-size:1.24rem;line-height:1.43}.pilgrimageControls{padding-bottom:8px}.countryRail{padding-bottom:10px}}
+@media(prefers-reduced-motion:reduce){.beacon,.beacon span,.beacon:before,.beacon:after,.journeyWaypointMarker,.journeyRoutePath,.scriptureFlow{animation:none!important;transition:none!important}.beacon span,.beacon:after{opacity:.12;transform:scale(1)}.scriptureFlow.isDissolving{opacity:1;transform:none;filter:none}}
