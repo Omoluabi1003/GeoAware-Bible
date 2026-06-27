@@ -93,6 +93,7 @@ export function resolveChristianRadioSuggestion(geoContext = {}) {
   if (!station) return null;
 
   const isPlayable = station.playback.playable && Boolean(station.stream.url);
+  if (!isPlayable || station.stream.status !== RADIO_SOURCE_STATUSES.verified) return null;
 
   return Object.freeze({
     id: station.id,
@@ -105,7 +106,7 @@ export function resolveChristianRadioSuggestion(geoContext = {}) {
     languageCodes: station.languageCodes,
     websiteUrl: station.websiteUrl,
     href: null,
-    streamUrl: isPlayable ? station.stream.url : null,
+    streamUrl: station.stream.url,
     stream: station.stream,
     description: station.description,
     sourceStatus: station.waveAtlas.syncStatus,
