@@ -147,6 +147,10 @@ function interpolateCamera(from, to, progress) {
   };
 }
 
+function buildScriptureTransitionKey(parts) {
+  return parts.filter(Boolean).join(':');
+}
+
 function useReducedMotion() {
   const [reducedMotion, setReducedMotion] = useState(false);
 
@@ -354,15 +358,16 @@ function HomeContent({ walkTheWord }) {
   const scriptureContextLine = isWalkScriptureActive
     ? [walkTheWord.journey?.title || 'Walk the Word', walkWaypoint?.title].filter(Boolean).join(' • ')
     : '';
-  const scriptureKey = [
+  const scriptureKey = buildScriptureTransitionKey([
     readingMode,
     walkWaypoint?.id || GeoContext.countryCode,
     displayedReference,
     displayedText,
     scriptureContextLine,
-    walkWaypointSummary,
-  ].filter(Boolean).join(':');
+    walkWaypointSummary
+  ]);
   const selectedReadingModeLabel = readingMode === 'read_near_me' ? 'Read Near Me' : readingMode === 'walk_the_word' ? 'Walk the Word' : 'Explore the World';
+  const worshipSuggestion = readingMode === 'read_near_me' ? GeoContext.worshipSuggestion : null;
 
 
   useEffect(() => {
@@ -660,6 +665,13 @@ function HomeContent({ walkTheWord }) {
             <summary>About this place</summary>
             <p>{scriptureTransition.summary}</p>
           </details>
+        ) : null}
+        {worshipSuggestion ? (
+          <aside className="quietWorshipSuggestion" aria-label="Quiet worship suggestion">
+            <span>Quiet worship</span>
+            <strong>{worshipSuggestion.stationName}</strong>
+            <small>{worshipSuggestion.city ? `${worshipSuggestion.city} • ` : ''}{worshipSuggestion.country}</small>
+          </aside>
         ) : null}
       </section>
     </main>

@@ -1,6 +1,7 @@
 import { CountryRegistry, defaultCountry, getCountry } from './countryRegistry.js';
 import { getScriptureLanguage } from './scriptureLanguageRegistry.js';
 import { resolveScriptureLanguages } from './autoLanguageResolver.js';
+import { getChristianRadioStations, resolveChristianRadioSuggestion } from './christianRadioRegistry.js';
 
 const FUTURE_CONTEXT_HOOKS = Object.freeze({
   localHistoricalContext: null,
@@ -62,7 +63,10 @@ function buildGeoContext(countryCode) {
     prayer: country.prayer,
     countryHighlight: country.countryHighlight,
     coordinates: Object.freeze({ ...country.coordinates }),
-    contextMetadata: Object.freeze({ ...FUTURE_CONTEXT_HOOKS })
+    contextMetadata: Object.freeze({
+      ...FUTURE_CONTEXT_HOOKS,
+      nearbyChristianRadioStations: getChristianRadioStations(country.isoCode)
+    })
   });
 }
 
@@ -95,6 +99,7 @@ export function resolveGeoContext(input = {}) {
   const recommendedTranslationId = languageResolution.recommendations[0]?.resolvedTranslationId || countryRecord.translationId || defaultCountry.translationId;
   const effectiveTranslationId = languageResolution.selectedTranslationId;
   const effectiveLanguage = languageResolution.selectedLanguage?.englishName || (input.stayInEnglish ? 'English' : recommendedLanguage);
+  const worshipSuggestion = resolveChristianRadioSuggestion({ ...model, countryCode: model.isoCode, country });
   const languageRegionLabel = languageResolution.recommendations[0]?.languageCode === 'en' ? ` (${model.isoCode})` : '';
 
   return Object.freeze({
@@ -114,7 +119,12 @@ export function resolveGeoContext(input = {}) {
     coordinates: Object.freeze(input.coordinates || countryRecord.coordinates || model.coordinates),
     source: input.locality?.countryCode ? 'reverse-geocode' : input.coordinates ? 'coordinates' : 'profile',
     summary: `Detected: ${[city, region].filter(Boolean).join(', ') || country} • ${recommendedLanguage}${languageRegionLabel} recommended`,
-    futureContextHooks: model.contextMetadata
+    worshipSuggestion,
+    worshipSuggestions: Object.freeze(worshipSuggestion ? [worshipSuggestion] : []),
+    futureContextHooks: Object.freeze({
+      ...model.contextMetadata,
+      nearbyChristianRadioStations: getChristianRadioStations(model.isoCode)
+    })
   });
 }
 

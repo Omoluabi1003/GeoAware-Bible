@@ -61,6 +61,18 @@ const registry = {
   sw: {
     languageCode: 'sw', nativeName: 'Kiswahili', englishName: 'Swahili', regionTags: ['east-africa'], countryCodes: ['KE'], direction: 'ltr', fallbackPriority: 86,
     availableTranslations: [translation('sample-sw', 'unavailable')], defaultTranslationId: 'sample-sw', licenseStatus: 'metadata-only'
+  },
+  he: {
+    languageCode: 'he', nativeName: 'עברית', englishName: 'Hebrew', regionTags: ['middle-east'], countryCodes: ['IL'], direction: 'rtl', fallbackPriority: 88,
+    availableTranslations: [], defaultTranslationId: null, licenseStatus: 'unavailable'
+  },
+  el: {
+    languageCode: 'el', nativeName: 'Ελληνικά', englishName: 'Greek', regionTags: ['southern-europe'], countryCodes: ['GR'], direction: 'ltr', fallbackPriority: 83,
+    availableTranslations: [], defaultTranslationId: null, licenseStatus: 'unavailable'
+  },
+  tr: {
+    languageCode: 'tr', nativeName: 'Türkçe', englishName: 'Turkish', regionTags: ['anatolia'], countryCodes: ['TR'], direction: 'ltr', fallbackPriority: 81,
+    availableTranslations: [], defaultTranslationId: null, licenseStatus: 'unavailable'
   }
 };
 
