@@ -8,7 +8,7 @@ import ProjectEarthRenderer from '../src/renderers/project-earth/ProjectEarthRen
 import { rotationForGeoCoordinate } from '../src/renderers/project-earth/geoCoordinateEngine.js';
 import { GeoLayerProvider } from '../src/context/GeoLayerContext.jsx';
 import { createGeoGuideResolver } from '../src/data/geoGuideResolver.js';
-import { resolveGeoNarrativeStudioPrompt, GEONARRATIVE_STUDIO_STATUS } from '../src/data/geoNarrativeStudio.js';
+import { GEONARRATIVE_STUDIO_SUGGESTED_PROMPTS, resolveGeoNarrativeStudioPrompt, GEONARRATIVE_STUDIO_STATUS } from '../src/data/geoNarrativeStudio.js';
 import { GEOGUIDE_ACTION_TYPES, GEOGUIDE_INTENTS } from '../src/data/geoGuideIntentModel.js';
 import WalkTheWordController from '../src/controllers/WalkTheWordController.jsx';
 
@@ -177,6 +177,9 @@ function HomeContent({ walkTheWord }) {
   const [isGeoGuideExpanded, setIsGeoGuideExpanded] = useState(false);
   const [geoGuideResponse, setGeoGuideResponse] = useState('');
   const geoGuideInputRef = useRef(null);
+  const geoGuideSuggestions = useMemo(() => {
+    return GEONARRATIVE_STUDIO_SUGGESTED_PROMPTS.slice(0, 3);
+  }, []);
   const activeDetectedCoordinates = mode === 'geo' ? detectedCoordinates : null;
   const activeDetectedLocality = mode === 'geo' ? detectedLocality : null;
   const GeoContext = useMemo(() => resolveGeoContext({
@@ -470,13 +473,8 @@ function HomeContent({ walkTheWord }) {
     }
   };
 
-  const submitGeoGuideCommand = (event) => {
-    event.preventDefault();
-    if (!isGeoGuideExpanded) {
-      openGeoGuide();
-      return;
-    }
-    const intent = parseGeoGuideCommand(geoGuideCommand);
+  const runGeoGuideCommand = (commandText) => {
+    const intent = parseGeoGuideCommand(commandText);
     if (!intent) {
       setGeoGuideResponse('Try “read near me” or “walk to Bethlehem.”');
       return;
@@ -491,6 +489,20 @@ function HomeContent({ walkTheWord }) {
     setGeoGuideResponse(applyGeoGuideAction(guideResult));
     setGeoGuideCommand('');
     setIsGeoGuideExpanded(false);
+  };
+
+  const submitGeoGuideCommand = (event) => {
+    event.preventDefault();
+    if (!isGeoGuideExpanded) {
+      openGeoGuide();
+      return;
+    }
+    runGeoGuideCommand(geoGuideCommand);
+  };
+
+  const selectGeoGuideSuggestion = (suggestion) => {
+    setGeoGuideCommand(suggestion.command);
+    runGeoGuideCommand(suggestion.command);
   };
 
   const renderPrimaryAction = () => {
@@ -546,6 +558,13 @@ function HomeContent({ walkTheWord }) {
                   />
                   <button type="submit" aria-label="Follow GeoGuide command">Guide</button>
                   <button type="button" className="geoGuideCancel" onClick={closeGeoGuide} aria-label="Close GeoGuide">×</button>
+                </div>
+                <div className="geoGuideSuggestions" aria-label="Suggested GeoNarrative journeys">
+                  {geoGuideSuggestions.map((suggestion) => (
+                    <button key={suggestion.command} type="button" onClick={() => selectGeoGuideSuggestion(suggestion)}>
+                      {suggestion.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}

@@ -18,6 +18,14 @@ const PROMPT_TO_GEONARRATIVE_ID = Object.freeze({
   'seven churches of revelation': 'seven_churches'
 });
 
+export const GEONARRATIVE_STUDIO_SUGGESTED_PROMPTS = Object.freeze([
+  Object.freeze({ label: 'Road to Golgotha', command: 'road to golgotha' }),
+  Object.freeze({ label: 'Exodus', command: 'exodus' }),
+  Object.freeze({ label: 'Paul Missionary Journey', command: 'paul missionary journey' }),
+  Object.freeze({ label: 'Road to Emmaus', command: 'road to emmaus' }),
+  Object.freeze({ label: 'Seven Churches', command: 'seven churches' })
+]);
+
 function normalizeStudioPrompt(prompt) {
   return typeof prompt === 'string'
     ? prompt.trim().toLowerCase().replace(/[?.!]+$/g, '').replace(/[’']/g, '').replace(/\s+/g, ' ')
