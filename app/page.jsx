@@ -8,6 +8,7 @@ import ProjectEarthRenderer from '../src/renderers/project-earth/ProjectEarthRen
 import { rotationForGeoCoordinate } from '../src/renderers/project-earth/geoCoordinateEngine.js';
 import { GeoLayerProvider } from '../src/context/GeoLayerContext.jsx';
 import { createGeoGuideResolver } from '../src/data/geoGuideResolver.js';
+import { GEOGUIDE_ACTION_TYPES, GEOGUIDE_INTENTS } from '../src/data/geoGuideIntentModel.js';
 import WalkTheWordController from '../src/controllers/WalkTheWordController.jsx';
 
 const ARRIVAL_TIMING = {
@@ -171,6 +172,8 @@ function HomeContent({ walkTheWord }) {
   const [locationError, setLocationError] = useState('');
   const [locationRequestKey, setLocationRequestKey] = useState(0);
   const [hasLocationPermissionResponse, setHasLocationPermissionResponse] = useState(false);
+  const [geoGuideCommand, setGeoGuideCommand] = useState('');
+  const [geoGuideResponse, setGeoGuideResponse] = useState('Where shall we go today?');
   const activeDetectedCoordinates = mode === 'geo' ? detectedCoordinates : null;
   const activeDetectedLocality = mode === 'geo' ? detectedLocality : null;
   const GeoContext = useMemo(() => resolveGeoContext({
@@ -209,9 +212,7 @@ function HomeContent({ walkTheWord }) {
   ), [GeoContext.effectiveTranslationId]);
   const countries = Object.entries(languageProfiles);
   const locationLabel = walkWaypoint?.title || buildLocationLabel(profile, activeDetectedLocality);
-  // GeoGuide is intentionally dormant here: future voice or typed prompts can call
-  // geoGuide.resolve(intent) without adding microphone UI, AI calls, or changing current flows.
-  void geoGuide;
+
 
   const arrivalMessage = arrivalStep === 'finding'
     ? `Finding ${profile.country}...`
@@ -377,6 +378,87 @@ function HomeContent({ walkTheWord }) {
     }
   };
 
+
+  const parseGeoGuideCommand = (commandText) => {
+    const normalizedCommand = commandText.trim().toLowerCase().replace(/[?.!]+$/g, '');
+    if (!normalizedCommand) return null;
+
+    if (/^(read\s+near\s+me|near\s+me|update\s+location)$/.test(normalizedCommand)) {
+      return { type: GEOGUIDE_INTENTS.readNearMe, slots: {}, source: 'typed_command', rawText: commandText };
+    }
+
+    const walkMatch = normalizedCommand.match(/^(?:walk|go)\s+to\s+(.+)$/);
+    if (walkMatch) {
+      const destination = walkMatch[1].trim();
+      if (destination === 'bethlehem') {
+        return { type: GEOGUIDE_INTENTS.walkGeoNarrative, slots: { geoNarrativeId: 'journey_to_bethlehem' }, source: 'typed_command', rawText: commandText };
+      }
+      return { type: GEOGUIDE_INTENTS.explorePlace, slots: { place: destination }, source: 'typed_command', rawText: commandText };
+    }
+
+    if (/^(show|open|start)\s+paul(?:'s)?\s+(?:journey|first\s+missionary\s+journey)$/.test(normalizedCommand)) {
+      return { type: GEOGUIDE_INTENTS.walkGeoNarrative, slots: { geoNarrativeId: 'paul_first_missionary_journey' }, source: 'typed_command', rawText: commandText };
+    }
+
+    const languageMatch = normalizedCommand.match(/^(?:change|switch)\s+(?:to\s+)?(.+)$/);
+    if (languageMatch) {
+      return { type: GEOGUIDE_INTENTS.changeLanguage, slots: { language: languageMatch[1].trim() }, source: 'typed_command', rawText: commandText };
+    }
+
+    return null;
+  };
+
+  const applyGeoGuideAction = (guideResult) => {
+    switch (guideResult.action.type) {
+      case GEOGUIDE_ACTION_TYPES.readNearMe:
+        setReadingMode('read_near_me');
+        requestLocationFollow();
+        return 'Opening Read Near Me.';
+      case GEOGUIDE_ACTION_TYPES.walkGeoNarrative: {
+        const nextJourneyId = guideResult.action.payload.geoNarrativeId;
+        if (nextJourneyId) walkTheWord.selectJourney(nextJourneyId);
+        setReadingMode('walk_the_word');
+        walkTheWord.start();
+        return nextJourneyId === 'paul_first_missionary_journey' ? 'Showing Paul’s journey.' : 'Walking to Bethlehem.';
+      }
+      case GEOGUIDE_ACTION_TYPES.explorePlace:
+        setReadingMode(guideResult.action.payload.readingMode || 'explore_world');
+        return 'Opening this place.';
+      case GEOGUIDE_ACTION_TYPES.changeLanguage: {
+        const languageCode = guideResult.action.payload.languageCode;
+        if (languageCode === 'en') {
+          setCountryCode('US');
+          setMode('fixed');
+          setDetectedCoordinates(null);
+          setDetectedLocality(null);
+          setLocationError('');
+          return 'Switched to English.';
+        }
+        return 'Language found; place profile unchanged.';
+      }
+      default:
+        return 'Try “read near me” or “walk to Bethlehem.”';
+    }
+  };
+
+  const submitGeoGuideCommand = (event) => {
+    event.preventDefault();
+    const intent = parseGeoGuideCommand(geoGuideCommand);
+    if (!intent) {
+      setGeoGuideResponse('Try “read near me” or “walk to Bethlehem.”');
+      return;
+    }
+
+    const guideResult = geoGuide.resolve(intent);
+    if (guideResult.action.type === GEOGUIDE_ACTION_TYPES.fallback) {
+      setGeoGuideResponse('I can guide places and languages already bundled here.');
+      return;
+    }
+
+    setGeoGuideResponse(applyGeoGuideAction(guideResult));
+    setGeoGuideCommand('');
+  };
+
   const renderPrimaryAction = () => {
     if (readingMode === 'read_near_me') {
       return <button type="button" onClick={requestLocationFollow}>Update Location</button>;
@@ -410,6 +492,22 @@ function HomeContent({ walkTheWord }) {
             <button type="button" className={mode === 'geo' ? 'active' : ''} onClick={requestLocationFollow}>Near me</button>
             <button type="button" className={mode === 'fixed' ? 'active' : ''} onClick={() => { setMode('fixed'); setLocationError(''); }}>Generative</button>
           </div>
+          <form className="geoGuideCommand" onSubmit={submitGeoGuideCommand} aria-label="GeoGuide typed command">
+            <label htmlFor="geoGuideCommandInput">Where shall we go today?</label>
+            <div className="geoGuideInputRow">
+              <input
+                id="geoGuideCommandInput"
+                type="text"
+                value={geoGuideCommand}
+                onChange={(event) => setGeoGuideCommand(event.target.value)}
+                placeholder="read near me"
+                autoComplete="off"
+              />
+              <button type="submit" aria-label="Follow GeoGuide command">Guide</button>
+            </div>
+            <p aria-live="polite">{geoGuideResponse}</p>
+          </form>
+
         </div>
 
         <ProjectEarthRenderer
