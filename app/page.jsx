@@ -209,7 +209,7 @@ function HomeContent({ walkTheWord }) {
   const cameraRef = useRef(targetEarthCamera);
   const [earthCamera, setEarthCamera] = useState(targetEarthCamera);
   const [isCameraTransitioning, setIsCameraTransitioning] = useState(false);
-  const [scriptureTransition, setScriptureTransition] = useState({ key: '', reference: '', text: '', className: '', summary: '' });
+  const [scriptureTransition, setScriptureTransition] = useState({ key: '', reference: '', text: '', className: '', summary: '', contextLine: '' });
   const [isScriptureVisible, setIsScriptureVisible] = useState(true);
   const scriptureTransitionTimerRef = useRef(null);
   const reducedMotion = useReducedMotion();
@@ -345,11 +345,13 @@ function HomeContent({ walkTheWord }) {
     };
   }, [targetEarthCamera, reducedMotion]);
 
+  const isWalkScriptureActive = readingMode === 'walk_the_word' && walkTheWord.isActive && walkWaypoint;
   const walkWaypointReferenceLabel = walkWaypoint?.waypointRole === 'route_context' ? 'Approximate route context' : walkWaypoint?.scriptureRefs[0];
-  const displayedReference = walkTheWord.isActive && walkWaypoint ? walkWaypointReferenceLabel : activeTranslation.reference;
-  const walkWaypointSummary = walkWaypoint?.historicalSummary || '';
+  const displayedReference = isWalkScriptureActive ? walkWaypointReferenceLabel : activeTranslation.reference;
+  const walkWaypointSummary = isWalkScriptureActive ? walkWaypoint?.historicalSummary || '' : '';
   const displayedText = activeTranslation.text;
-  const scriptureClassName = walkTheWord.isActive && walkWaypoint ? 'waypointDescription' : '';
+  const scriptureClassName = isWalkScriptureActive ? 'waypointDescription' : '';
+  const scriptureContextLine = isWalkScriptureActive ? `${walkTheWord.journey?.title || 'Walk the Word'} • ${walkWaypoint.title}` : '';
   const scriptureKey = `${readingMode}:${walkWaypoint?.id || GeoContext.countryCode}:${displayedReference}:${displayedText}`;
   const selectedReadingModeLabel = readingMode === 'read_near_me' ? 'Read Near Me' : readingMode === 'walk_the_word' ? 'Walk the Word' : 'Explore the World';
 
@@ -361,6 +363,7 @@ function HomeContent({ walkTheWord }) {
       text: displayedText,
       className: scriptureClassName,
       summary: walkWaypointSummary,
+      contextLine: scriptureContextLine,
     };
 
     if (!scriptureTransition.key || reducedMotion) {
@@ -381,7 +384,7 @@ function HomeContent({ walkTheWord }) {
     return () => {
       if (scriptureTransitionTimerRef.current) window.clearTimeout(scriptureTransitionTimerRef.current);
     };
-  }, [displayedReference, displayedText, reducedMotion, scriptureClassName, scriptureKey, scriptureTransition.key, walkWaypointSummary]);
+  }, [displayedReference, displayedText, reducedMotion, scriptureClassName, scriptureContextLine, scriptureKey, scriptureTransition.key, walkWaypointSummary]);
 
 
   useEffect(() => {
@@ -640,6 +643,7 @@ function HomeContent({ walkTheWord }) {
       </section>
 
       <section className={`scriptureFlow ${isScriptureVisible ? 'isVisible' : 'isDissolving'}`} aria-label="Current Scripture" aria-live="polite" aria-atomic="true">
+        {scriptureTransition.contextLine ? <p className="scriptureJourneyContext">{scriptureTransition.contextLine}</p> : null}
         <p className="scriptureReference">{scriptureTransition.reference}</p>
         <p className={`scriptureText ${scriptureTransition.className}`}>{scriptureTransition.text}</p>
         {scriptureTransition.summary ? (
