@@ -7,6 +7,7 @@ import { getTranslation } from '../src/data/translations.js';
 import ProjectEarthRenderer from '../src/renderers/project-earth/ProjectEarthRenderer.jsx';
 import { rotationForGeoCoordinate } from '../src/renderers/project-earth/geoCoordinateEngine.js';
 import { GeoLayerProvider } from '../src/context/GeoLayerContext.jsx';
+import { createGeoGuideResolver } from '../src/data/geoGuideResolver.js';
 import WalkTheWordController from '../src/controllers/WalkTheWordController.jsx';
 
 const ARRIVAL_TIMING = {
@@ -179,6 +180,13 @@ function HomeContent({ walkTheWord }) {
     stayInEnglish: mode === 'fixed',
     browserLanguages: typeof navigator === 'undefined' ? [] : navigator.languages
   }), [countryCode, activeDetectedCoordinates, activeDetectedLocality, mode]);
+  const geoGuide = useMemo(() => createGeoGuideResolver({
+    countryCode: GeoContext.countryCode,
+    coordinates: activeDetectedCoordinates,
+    locality: activeDetectedLocality,
+    stayInEnglish: mode === 'fixed',
+    browserLanguages: typeof navigator === 'undefined' ? [] : navigator.languages
+  }), [GeoContext.countryCode, activeDetectedCoordinates, activeDetectedLocality, mode]);
   const profile = languageProfiles[GeoContext.countryCode] || languageProfiles.US;
   const walkWaypoint = walkTheWord.activeWaypoint;
   const walkWaypointCoordinates = readingMode === 'walk_the_word' ? walkWaypoint?.coordinates || null : null;
@@ -201,6 +209,10 @@ function HomeContent({ walkTheWord }) {
   ), [GeoContext.effectiveTranslationId]);
   const countries = Object.entries(languageProfiles);
   const locationLabel = walkWaypoint?.title || buildLocationLabel(profile, activeDetectedLocality);
+  // GeoGuide is intentionally dormant here: future voice or typed prompts can call
+  // geoGuide.resolve(intent) without adding microphone UI, AI calls, or changing current flows.
+  void geoGuide;
+
   const arrivalMessage = arrivalStep === 'finding'
     ? `Finding ${profile.country}...`
     : arrivalStep === 'recognized'
