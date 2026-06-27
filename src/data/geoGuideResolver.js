@@ -107,6 +107,14 @@ function resolveWalkGeoNarrative(intent) {
 
 function resolveExplorePlace(intent) {
   const place = intent.slots.place || intent.slots.name || intent.slots.countryCode;
+  if (['world', 'the world', 'explore world'].includes(normalizeSearchText(place))) {
+    return response({
+      actionType: GEOGUIDE_ACTION_TYPES.explorePlace,
+      message: 'Open the Explore the World placeholder mode.',
+      payload: { placeType: 'world_placeholder', readingMode: 'explore_world' }
+    });
+  }
+
   const countryContext = findCountryByPlace(place);
   if (countryContext) {
     return response({
