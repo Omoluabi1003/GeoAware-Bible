@@ -1,5 +1,19 @@
 # GeoAware Bible™
 
+## Project at a glance
+
+**Category:** Location-aware Scripture reading experience  
+**Purpose:** Recommend language-appropriate biblical texts and allow users to select translations  
+**Audience:** Users, implementers, contributors and potential partners  
+**Code:** https://github.com/Omoluabi1003/GeoAware-Bible
+
+**Implementation context:** Language recommendations and translation availability depend on licensing and data coverage; roadmap milestones must be distinguished from deployed features.
+
+The sections below describe the product philosophy, architecture and available development workflows. Confirm feature readiness through the actual code and release before using it operationally.
+
+---
+
+
 GeoAware Bible™ automatically detects your location and presents Scripture in the predominant local language using open-license Bible translations. Designed for travelers, missionaries, and global readers, it offers seamless multilingual access while allowing users to choose and save their preferred language.
 
 Founded by **Paul Iyogun**, Founder and Chief Architect of ETL GIS Consulting LLC, GeoAware Bible™ is guided by a Scripture-first vision: to use code as a road that helps pilgrims walk through Scripture.
